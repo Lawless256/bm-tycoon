@@ -696,7 +696,7 @@ function farmMode(f){return f.mode||'solo';}
 function soloHashTotal(){return S.farms.reduce((s,f)=>{
   const m=farmMode(f);
   if(m==='solo')return s+farmHash(f);
-  if(m==='eth'||m==='ai')return s;
+  if(m==='eth'||m==='ai'||m==='aiusd')return s;
   return POOLS.some(p=>p.id===m&&p.from<=S.day)?s:s+farmHash(f); // pool not open yet -> mines solo
 },0);}
 function farmWattsInstalled(f){return farmRigs(f.id).reduce((s,r)=>s+rigWatts(r),0);}
@@ -715,6 +715,7 @@ function expectedDailyBTC(){
     const mode=farmMode(f);
     if(mode==='eth')total+=farmCU(f)*ethRate(S.day)*0.98;
     else if(mode==='ai')total+=farmCU(f)*aiRate(S.day)*0.98;
+    else if(mode==='aiusd')total+=farmCU(f)*aiRate(S.day)*0.99; // paid in USD; BTC-equivalent shown
     else{
       const fh=farmHash(f);if(fh<=0||nt<=0)continue;
       const p=mode==='solo'?null:POOLS.find(x=>x.id===mode&&x.from<=S.day);
@@ -881,9 +882,13 @@ function stepDay(){
   let foundBTC=0,found=0,soloHash=0,steadyBTC=0;
   for(const f of S.farms){
     const mode=farmMode(f);
-    if(mode==='eth'||mode==='ai'){
+    if(mode==='eth'||mode==='ai'||mode==='aiusd'){
       const rate=mode==='eth'?ethRate(day):aiRate(day);
-      if(rate>0)steadyBTC+=farmCU(f)*rate*0.98*(0.9+0.2*rng.next()); // 2% marketplace fee
+      if(rate>0){
+        const amt=farmCU(f)*rate*(0.9+0.2*rng.next());
+        if(mode==='aiusd')S.cash+=amt*0.99*S.price;   // USD payouts straight to the bank, 1% fee
+        else steadyBTC+=amt*0.98;                      // BTC payouts, 2% marketplace fee
+      }
     }else if(mode==='solo'){
       soloHash+=farmHash(f);
     }else{
@@ -968,8 +973,7 @@ function stepDay(){
     else if(r.clk===-1){cool*=0.7;failBoost=0.7;}                  // UC runs cool and gentle
     r.cond=Math.max(0.05,r.cond-(0.0005+0.0009*failMult)*cool*(1+rng.next()*0.5));
     if(failMult>0&&rng.chance(failMult*failBoost*(0.0002+(1-r.cond)*0.002))){
-      r.broken=true;
-      batch.fails++;   // consolidated into a single toast per batch — no news/ticker spam
+      r.broken=true;   // silent — shows on the FAILED tag, REPAIR ALL badge and rigs-online counter
     }
   }
   /* --- scheduled events --- */
@@ -1103,6 +1107,7 @@ function processMonth(){
 }
 /* ============ MAJOR ALERTS (auto-pause) ============ */
 function queueAlert(a){
+  if(skipping)return; // skip-to-date ignores all pause notifications (everything still lands in the news feed)
   if(S.set&&S.set.notifMajor===false){ // master off: never block, never pause — downgrade to a toast
     toast((a.kind==='red'?'🚨 ':a.kind==='pizza'?'🍕 ':'📰 ')+a.head,a.body.length>140?a.body.slice(0,140)+'…':a.body);
     return;
@@ -1138,16 +1143,16 @@ function showAlerts(){
 }
 window.A=window.A||{};
 /* ============ TIME CONTROL ============ */
-let busy=false,abortRun=false;
+let busy=false,abortRun=false,skipping=false;
 function runSteps(n,done){
   if(busy||!S)return;
   if(S.alertQueue.length){showAlerts();return;}     // can't advance past an unacknowledged alert
   busy=true;abortRun=false;
   const chunk=()=>{
-    let k=Math.min(n,10);
+    let k=Math.min(n,skipping?120:10);
     while(k-->0&&n>0){
       stepDay();n--;
-      if(S.alertQueue.length){n=0;break;}            // major event: stop time mid-batch
+      if(S.alertQueue.length&&!skipping){n=0;break;} // major event: stop time mid-batch (unless skipping)
     }
     if(n>0&&!abortRun)setTimeout(chunk,0);
     else{
@@ -1156,10 +1161,6 @@ function runSteps(n,done){
       if(batch.blocks>0){
         if(S.set.notifBlocks)toast('⛏ '+batch.blocks+' Block'+(batch.blocks>1?'s':'')+' Found','+'+fmtBTC(batch.btc)+' to your wallet');
         batch.blocks=0;batch.btc=0;
-      }
-      if(batch.fails>0){
-        toast('🔧 '+batch.fails+' Rig'+(batch.fails>1?'s':'')+' Failed','Now offline. Use REPAIR ALL in the Rigs tab to fix the lot.');
-        batch.fails=0;
       }
       saveGame();render();flushToasts();showAlerts();
       if(done)done();
@@ -1190,13 +1191,18 @@ A.showGenesis=function(){
   A.closeModal();showAlerts();
 };
 A.skipTo=function(){
+  if(busy)return err('Time is already advancing — pause first.');
   const v=el('skipdate')?el('skipdate').value:null;
   if(!v)return err('Pick a target date first.');
   const target=Math.round((Date.parse(v+'T00:00:00Z')-EPOCH)/864e5);
   if(!isFinite(target)||target<=S.day)return err('Pick a date after '+fmtDate(S.day)+'.');
   const n=Math.min(target-S.day,365*250);
   S.speed='pause';renderTimebar();
-  runSteps(n);
+  S.alertQueue.length=0;          // skip dismisses anything pending — it's all in the news feed
+  if(el('alerthost'))el('alerthost').innerHTML='';
+  skipping=true;
+  runSteps(n,()=>{skipping=false;toast('⤳ Arrived','Skipped to '+fmtDate(S.day)+'. Major events from the journey are in the News tab.');flushToasts();});
+  if(!busy)skipping=false;
 };
 A.tab=t=>{S.tab=t;render();};
 function err(msg){toast('✖ Can\'t Do That',msg);flushToasts();}
@@ -1323,7 +1329,8 @@ A.setFarmMode=function(fid,mode){
   if(mode==='eth'){
     if(S.day>=MERGE_DAY)toast('⚠ ETH Mining Is Dead','The Merge ended GPU mining on Ethereum. This farm will earn nothing — try AI COMPUTE.');
     else toast('⛏ '+f.name+' → ETH Pool','GPU rigs mine Ethereum, paid out in BTC (2% fee). CPUs and ASICs here earn nothing.');
-  }else if(mode==='ai')toast('🤖 '+f.name+' → AI Compute','GPU rigs rent out compute for AI training, paid in BTC (2% fee). Modern cards earn the most.');
+  }else if(mode==='ai')toast('🤖 '+f.name+' → AI Compute (BTC)','GPU rigs rent out compute for AI training, paid in BTC (2% fee). Modern cards earn the most.');
+  else if(mode==='aiusd')toast('🤖 '+f.name+' → AI Compute (USD)','GPU rigs rent out compute for AI training, paid in dollars straight to your bank (1% fee).');
   else if(mode==='solo')toast('⛏ '+f.name+' → Solo','Full block rewards, full variance.');
   else{const p=POOLS.find(x=>x.id===mode);if(p)toast('⛏ '+f.name+' → '+p.name,'Steady payouts, '+(p.fee*100).toFixed(1)+'% fee.');}
   saveGame();render();flushToasts();
@@ -1379,7 +1386,24 @@ A.addCard=function(rigId){
   const f=getFarm(r.farmId);
   if(farmWattsInstalled(f)+m.watts>f.capKW*1000)return err('Farm power capacity exceeded.');
   r.cards.push(m.id);r.invested+=m.price;S.cash-=m.price;
+  S.ui_lastCard=m.id;   // remember the choice so the next add defaults to it
   toast('🔩 Card Installed',m.name+' added to rig #'+r.id);
+  saveGame();render();flushToasts();
+};
+function cardValue(r,cid){
+  const m=findModel(cid);if(!m)return 0;
+  const age=(S.day-r.bought)/365.25;
+  return Math.max(2,Math.round(m.price*0.55*r.cond*Math.pow(0.85,age)));
+}
+A.sellCard=function(rigId,cid){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r||r.kind!=='gpu')return;
+  const idx=r.cards.indexOf(cid);if(idx<0)return;
+  const m=findModel(cid),v=cardValue(r,cid);
+  if(!confirm('Pull one '+m.name+' from rig #'+r.id+' and sell it for '+fmtUSD(v)+'?'))return;
+  r.cards.splice(idx,1);
+  r.invested=Math.max(GPU_FRAME_PRICE,r.invested-m.price);
+  S.cash+=v;
+  toast('🔧 Card Sold',m.name+' pulled and sold for '+fmtUSD(v));
   saveGame();render();flushToasts();
 };
 A.upgradePsu=function(rigId){
@@ -1534,6 +1558,15 @@ A.takeLoan=function(){
   S.cash+=amt;
   pushNews(S.day,'Loan Originated',fmtUSD(amt)+' at '+(loanAPR()*100).toFixed(0)+'% APR over '+months+' months. Payment: '+fmtUSD(pay)+'/mo. Don\'t miss one.','neut',false);
   toast('🏦 Loan Funded',fmtUSD(amt)+' — '+fmtUSD(pay)+'/mo for '+months+' months');
+  saveGame();render();flushToasts();
+};
+A.payLoan=function(i){
+  const L=S.loans[i];if(!L)return;
+  if(S.cash<L.bal)return err('Paying this off costs '+fmtUSD(L.bal)+'.');
+  if(!confirm('Pay off this loan early?\n\nRemaining balance: '+fmtUSD(L.bal)+'\n(You skip all future interest — about '+fmtUSD(Math.max(0,L.pay*L.left-L.bal))+' saved.)'))return;
+  S.cash-=L.bal;S.loans.splice(i,1);
+  pushNews(S.day,'Loan Settled Early','Remaining balance of '+fmtUSD(L.bal)+' paid in full. The bank is disappointed in your fiscal responsibility.','neut',false);
+  toast('🏦 Loan Paid Off',fmtUSD(L.bal)+' settled — debt-free on this one.');
   saveGame();render();flushToasts();
 };
 A.payBill=function(){
@@ -1706,7 +1739,7 @@ function renderTimebar(){
    '<button class="sm" onclick="A.step(30)" title="Advance 30 days">+1M</button>'+
    '<input type="date" id="skipdate" style="padding:3px 6px;font-size:11px" value="'+(S.ui_skip||'')+'" onchange="A.setUI(\'skip\',this.value)" title="Pick a future date, then SKIP to fast-forward (major alerts will still pause unless disabled in settings)">'+
    '<button class="sm" onclick="A.skipTo()" title="Fast-forward to the chosen date">⤳ SKIP</button>'+
-   '<span class="chip" title="Rigs hashing (powered + linked) of total owned"><span class="lab">Rigs Online</span><span class="val" style="display:block">'+S.rigs.filter(rigMining).length+' / '+S.rigs.length+'</span></span>'+
+   '<span class="dim" style="font-size:10px;border:1px solid var(--edge);border-radius:4px;padding:3px 8px" title="Rigs hashing (powered + linked) of total owned">RIGS <b style="color:#e8eef5">'+S.rigs.filter(rigMining).length+' / '+S.rigs.length+'</b></span>'+
    '<span class="dim" style="font-size:10px;margin-left:auto" title="Block reward era">REWARD '+curReward()+' BTC'+(curReward()===0?' (FEES ONLY)':'')+'</span>';
 }
 function tabsList(){
@@ -1743,7 +1776,7 @@ function renderDash(){
     stat('Blocks Found (Lifetime)',S.blocksFound.toLocaleString(),'amber','Solo blocks you have mined')+
     stat('Network Difficulty',fmtNum(S.difficulty),'','Adjusts every 2016 blocks')+
     stat('Network Fees',(S.feeRate||1)+' sat/vB',(S.feeRate>100?'red':S.feeRate>30?'amber':''),'Simulated mempool fee rate. Spikes during volatility and bull-run congestion. Drives your wallet↔exchange transfer fee.')+
-    stat('Est. Time to Next Block (solo at current hashrate)',sHash>0?fmtDur(eta):'— (no solo farms)','','Statistical estimate based on your solo farms\' share of network hashrate — actual solo block times are random. You could hit one in an hour or wait years.')+
+    stat('Est. Time to Next Block (solo at current hashrate)',sHash>0?fmtDur(eta):'— (no solo hashrate)','','Statistical estimate based on your solo farms\' share of network hashrate — actual solo block times are random. You could hit one in an hour or wait years.')+
     stat('Time Since Last Block Found',S.lastBlockDay===null?'never':fmtDur(S.day-S.lastBlockDay),'','Days since your last solo block. Pool payouts don\'t count.')+
     stat('Total BTC Supply Mined',(S.supply>=21e6-1?'₿21,000,000 (fully mined)':'₿'+Math.floor(S.supply).toLocaleString('en-US')+' / ₿21,000,000'),'','All bitcoin issued globally so far. Hard cap: 21 million.')+
     stat('Network Market Cap',S.price>0?fmtBigUSD(S.price*S.supply):'—','','BTC price × total supply mined. Updates with every price tick.')+
@@ -1780,7 +1813,10 @@ function farmModeOpts(f){
   let o='<option value="solo"'+(m==='solo'?' selected':'')+'>⛏ SOLO — full blocks, full variance</option>';
   for(const p of activePools())o+='<option value="'+p.id+'"'+(m===p.id?' selected':'')+'>'+p.name+' · '+(p.fee*100).toFixed(1)+'% fee · ~'+(poolShare(p)*100).toFixed(0)+'% of network</option>';
   if(S.day>=ETH_START)o+='<option value="eth"'+(m==='eth'?' selected':'')+'>Ξ ETH POOL → BTC payouts · GPUs only'+(S.day>=MERGE_DAY?' [DEAD — post-Merge]':'')+'</option>';
-  if(S.day>=AI_START)o+='<option value="ai"'+(m==='ai'?' selected':'')+'>🤖 AI COMPUTE → BTC payouts · GPUs only</option>';
+  if(S.day>=AI_START){
+    o+='<option value="ai"'+(m==='ai'?' selected':'')+'>🤖 AI COMPUTE → BTC payouts · 2% fee · GPUs only</option>';
+    o+='<option value="aiusd"'+(m==='aiusd'?' selected':'')+'>🤖 AI COMPUTE → USD payouts · 1% fee · GPUs only</option>';
+  }
   return o;
 }
 function poolPanel(){
@@ -1791,7 +1827,7 @@ function poolPanel(){
   for(const f of S.farms){
     const m=farmMode(f);
     if(m==='eth')ethCU+=farmCU(f);
-    else if(m==='ai')aiCU+=farmCU(f);
+    else if(m==='ai'||m==='aiusd')aiCU+=farmCU(f);
     else if(m!=='solo'&&POOLS.some(p=>p.id===m&&p.from<=S.day))poolHash+=farmHash(f);
   }
   const exp=expectedDailyBTC();
@@ -1922,6 +1958,7 @@ function rigRow(r){
   if(mining){
     if(fmode==='eth')dailyRev=cuOfRig(r)*ethRate(S.day)*0.98*S.price;
     else if(fmode==='ai')dailyRev=cuOfRig(r)*aiRate(S.day)*0.98*S.price;
+    else if(fmode==='aiusd')dailyRev=cuOfRig(r)*aiRate(S.day)*0.99*S.price;
     else{
       const p=fmode==='solo'?null:POOLS.find(x=>x.id===fmode&&x.from<=S.day);
       dailyRev=nt>0?rigHash(r)/nt*144*(curReward()+curFee())*S.set.luck*(p?1-p.fee:1)*S.price:0;
@@ -1930,13 +1967,19 @@ function rigRow(r){
   const unprofit=S.price>0&&mining&&dailyRev<dailyCost;
   let extra='';
   if(r.kind==='gpu'){
-    const opts=GPUS.filter(g=>g.from<=S.day).map(g=>'<option value="'+g.id+'">'+g.name+' — '+fmtHash(g.hash)+' — '+fmtUSD(g.price)+'</option>').join('');
+    const lastCard=S.ui_lastCard&&GPUS.some(g=>g.id===S.ui_lastCard&&g.from<=S.day)?S.ui_lastCard:null;
+    const opts=GPUS.filter(g=>g.from<=S.day).map(g=>'<option value="'+g.id+'"'+(g.id===lastCard?' selected':'')+'>'+g.name+' — '+fmtHash(g.hash)+((g.cu||0)>=3?' — CU '+g.cu:'')+' — '+fmtUSD(g.price)+'</option>').join('');
     extra='<div class="row" style="margin-top:6px">'+
      (r.cards.length<PSU_TIERS[r.psu].cards?'<select id="cardsel-'+r.id+'" style="max-width:240px">'+opts+'</select><button class="sm buy" onclick="A.addCard('+r.id+')" title="Install another GPU in this rig">+ Card</button>':'<span class="tag warn">PSU FULL</span>')+
      (r.psu<PSU_TIERS.length-1?'<button class="sm" onclick="A.upgradePsu('+r.id+')" title="'+PSU_TIERS[r.psu+1].name+' — supports '+PSU_TIERS[r.psu+1].cards+' cards">⬆ PSU '+fmtUSD(PSU_TIERS[r.psu+1].price)+'</button>':'')+
      (r.cool<COOL_TIERS.length-1?'<button class="sm" onclick="A.upgradeCool('+r.id+')" title="'+COOL_TIERS[r.cool+1].name+' — slows wear">❄ '+fmtUSD(COOL_TIERS[r.cool+1].price)+'</button>':'<span class="tag neut">❄ '+COOL_TIERS[r.cool].name+'</span>')+
      '</div>';
-    if(r.cards.length)extra+='<div class="dim" style="font-size:11px;margin-top:4px">'+r.cards.map(c=>findModel(c).name).join(' + ')+'</div>';
+    if(r.cards.length){
+      const counts={};r.cards.forEach(c=>counts[c]=(counts[c]||0)+1);
+      extra+='<div class="row" style="font-size:11px;margin-top:4px">'+Object.entries(counts).map(([cid,n])=>
+        '<span class="dim">'+n+'× '+findModel(cid).name+'</span><button class="sm" onclick="A.sellCard('+r.id+',\''+cid+'\')" title="Pull one '+findModel(cid).name+' from this rig and sell it">− '+fmtUSD(cardValue(r,cid))+'</button>'
+      ).join('')+'</div>';
+    }
   }
   return '<div class="rig'+(r.broken?' broken':mining?'':' off')+'">'+
    '<div class="spread"><div>'+iconFor(r)+'<b>'+rigName(r)+'</b> '+
@@ -2133,8 +2176,9 @@ function renderBank(){
     '<div class="hint">APR '+(apr*100).toFixed(0)+'% · Credit limit '+fmtUSD(lim)+' (40% of net worth). Fixed monthly payments, auto-deducted. Miss one and the repo crew comes for your rigs.</div>';
   }
   if(S.loans.length){
-    html+='<table style="margin-top:10px"><tr><th>Balance</th><th>Rate</th><th>Payment</th><th>Months Left</th></tr>'+
-    S.loans.map(L=>'<tr><td>'+fmtUSD(L.bal)+'</td><td>'+(L.rate*100).toFixed(0)+'%</td><td>'+fmtUSD(L.pay)+'/mo</td><td>'+L.left+'</td></tr>').join('')+'</table>';
+    html+='<table style="margin-top:10px"><tr><th>Balance</th><th>Rate</th><th>Payment</th><th>Months Left</th><th></th></tr>'+
+    S.loans.map((L,i)=>'<tr><td>'+fmtUSD(L.bal)+'</td><td>'+(L.rate*100).toFixed(0)+'%</td><td>'+fmtUSD(L.pay)+'/mo</td><td>'+L.left+'</td>'+
+    '<td style="text-align:right"><button class="sm buy" onclick="A.payLoan('+i+')" '+(S.cash<L.bal?'disabled':'')+' title="Settle the remaining balance today — no further interest, no penalty">PAY OFF '+fmtUSD(L.bal)+'</button></td></tr>').join('')+'</table>';
   }
   html+='</div></div>';
   return html;
