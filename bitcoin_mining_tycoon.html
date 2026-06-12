@@ -1,0 +1,2266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitcoin Mining Tycoon</title>
+<style>
+:root{
+  --bg:#0b0d10; --panel:#14181d; --panel2:#1a1f26; --edge:#2a313a; --edge2:#3a434f;
+  --amber:#f7931a; --amber2:#ffb84d; --green:#4ade80; --red:#f87171; --blue:#60a5fa;
+  --txt:#cfd6de; --dim:#7c8794; --mono:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg) repeating-linear-gradient(135deg,transparent 0 22px,rgba(255,255,255,.012) 22px 24px);
+  color:var(--txt); font-family:var(--mono); font-size:14px; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1280px;margin:0 auto;padding:10px 12px 90px}
+h2{font-size:15px;color:var(--amber2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;border-bottom:1px solid var(--edge);padding-bottom:6px}
+h3{font-size:13px;margin-bottom:6px}
+.panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--edge);border-radius:8px;padding:14px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 4px 14px rgba(0,0,0,.45);margin-bottom:12px}
+#hdr{position:sticky;top:0;z-index:90;background:linear-gradient(180deg,#161b21,#101419);border-bottom:2px solid #000;box-shadow:0 3px 12px rgba(0,0,0,.6)}
+#hdr .inner{max-width:1280px;margin:0 auto;padding:8px 12px;position:relative}
+#minichart{display:none;position:absolute;top:6px;right:84px;width:252px;height:84px;background:#0a0d11;border:1px solid var(--edge);border-radius:5px;cursor:pointer}
+@media(min-width:1200px){
+  #minichart{display:block}
+  #menubtn{position:absolute;top:8px;right:12px}
+  #hdr .hrow,#hdr .timebar{margin-right:346px}
+}
+.hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:800;color:var(--amber);text-shadow:0 0 12px rgba(247,147,26,.5);white-space:nowrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.chip{background:#0d1115;border:1px solid var(--edge);border-radius:6px;padding:3px 8px;min-width:88px}
+.chip .lab{font-size:8.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px}
+.chip .val{font-size:12px;font-weight:700;color:#e8eef5;white-space:nowrap}
+.amber{color:var(--amber2)!important}.grn{color:var(--green)!important}.red{color:var(--red)!important}.dim{color:var(--dim)!important}
+.timebar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px}
+.datebox{background:#05070a;border:1px solid #2d3a26;border-radius:5px;padding:4px 12px;color:#9be88f;font-weight:700;letter-spacing:1px;text-shadow:0 0 8px rgba(120,255,120,.5)}
+button{font-family:var(--mono);cursor:pointer;border-radius:5px;border:1px solid var(--edge2);
+  background:linear-gradient(180deg,#2a323c,#1c2229);color:var(--txt);padding:6px 12px;font-size:12px;font-weight:700}
+button:hover{border-color:var(--amber);color:var(--amber2)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.on{background:linear-gradient(180deg,#7a4a0e,#5a370c);border-color:var(--amber);color:#ffd9a0;box-shadow:0 0 10px rgba(247,147,26,.4)}
+button.buy{border-color:#2f5d3a;background:linear-gradient(180deg,#1e3a26,#15291b);color:#8fe8a5}
+button.buy:hover{border-color:var(--green)}
+button.warn{border-color:#5d2f2f;background:linear-gradient(180deg,#3a1e1e,#291515);color:#e8908f}
+button.sm{padding:3px 8px;font-size:11px}
+input,select{font-family:var(--mono);background:#0a0d11;border:1px solid var(--edge2);color:#e8eef5;border-radius:5px;padding:6px 8px;font-size:13px}
+input:focus,select:focus{outline:none;border-color:var(--amber)}
+.tabs{display:flex;gap:4px;padding:6px 0 2px;margin-top:2px;flex-wrap:wrap}
+.tabs button{padding:8px 16px;text-transform:uppercase;letter-spacing:.5px}
+.tabs button.act{background:linear-gradient(180deg,#4a3208,#352405);border-color:var(--amber);color:var(--amber2)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.stat{background:#0d1115;border:1px solid var(--edge);border-radius:6px;padding:10px 12px}
+.stat .lab{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.stat .val{font-size:17px;font-weight:800;color:#eef4fa}
+.led{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:#333;vertical-align:1px}
+.led.g{background:var(--green);box-shadow:0 0 7px var(--green)}
+.led.r{background:var(--red);box-shadow:0 0 7px var(--red)}
+.led.y{background:var(--amber);box-shadow:0 0 7px var(--amber)}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.bar{height:8px;background:#0a0d11;border:1px solid var(--edge);border-radius:4px;overflow:hidden;flex:1;min-width:60px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#7adf8f,#f0c050,#f87171);transition:width .3s}
+.condbar i{background:linear-gradient(90deg,#f87171,#f0c050,#7adf8f)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.6px;padding:5px 8px;border-bottom:1px solid var(--edge)}
+td{padding:7px 8px;border-bottom:1px solid #1c2128;vertical-align:middle}
+.rig{background:#0d1115;border:1px solid var(--edge);border-radius:7px;padding:10px 12px;margin-bottom:8px}
+.rig.off{opacity:.6}.rig.broken{border-color:#6b2222}
+.tag{display:inline-block;font-size:9px;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.tag.bull{background:#10331c;color:#7adf8f;border:1px solid #1d5b30}
+.tag.bear{background:#3a1515;color:#f59896;border:1px solid #6b2222}
+.tag.neut{background:#23282f;color:#9aa6b3;border:1px solid #39414c}
+.tag.warn{background:#3a2a08;color:#ffce7a;border:1px solid #6b4d12}
+.news{max-height:520px;overflow-y:auto}
+.nitem{padding:9px 6px;border-bottom:1px solid #1b2026}
+.nitem .nd{color:var(--dim);font-size:10px}
+.nitem .nh{font-weight:700;color:#e8eef5;margin:2px 0}
+.nitem .nb{color:#9aa6b3;font-size:12px}
+.nitem.major{background:linear-gradient(90deg,rgba(247,147,26,.07),transparent);border-left:3px solid var(--amber)}
+#toasts{position:fixed;bottom:14px;right:14px;z-index:200;display:flex;flex-direction:column;gap:8px;max-width:340px}
+.toast{background:linear-gradient(180deg,#23292f,#171c21);border:1px solid var(--amber);border-radius:8px;padding:10px 14px;
+  box-shadow:0 6px 20px rgba(0,0,0,.7),0 0 14px rgba(247,147,26,.25);animation:tin .3s ease}
+.toast b{color:var(--amber2)}.toast .tb{font-size:12px;color:#aab6c2;margin-top:2px}
+@keyframes tin{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+.gauge{text-align:center}
+.gauge svg{width:100%;max-width:150px}
+.gauge .gl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px}
+.gauge .gv{font-size:14px;font-weight:800;color:var(--amber2)}
+#chartbox{position:relative}
+#chart,#exchart{width:100%;height:260px;display:block;background:#0a0d11;border:1px solid var(--edge);border-radius:6px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .panel{max-width:560px;width:100%;max-height:90vh;overflow-y:auto;margin:0}
+.setrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1b2026}
+.setrow label{font-size:12px;color:#aab6c2}
+.hint{font-size:11px;color:var(--dim);margin-top:4px}
+.icon{vertical-align:middle;margin-right:6px}
+#tickerwrap{overflow:hidden;background:#07090c;border:1px solid var(--edge);border-radius:5px;margin:0 0 10px;padding:5px 0}
+.tickin{display:inline-block;white-space:nowrap;animation:marq 45s linear infinite}
+.tk{color:var(--amber2);margin:0 18px;font-size:12px;letter-spacing:.5px}
+.tk.bear{color:#f59896}.tk.bull{color:#7adf8f}
+.tksep{color:#39434f;font-size:12px}
+@keyframes marq{to{transform:translateX(-50%)}}
+.alertwrap{position:fixed;inset:0;z-index:400;background:rgba(2,3,5,.88);display:flex;align-items:center;justify-content:center;padding:16px;animation:tin .25s ease}
+.alertbox{max-width:640px;width:100%;background:linear-gradient(180deg,#1d232b,#12161b);border:2px solid var(--amber);border-radius:10px;overflow:hidden;box-shadow:0 0 60px rgba(247,147,26,.35)}
+.alertbox .abar{background:var(--amber);color:#1a1206;font-weight:800;letter-spacing:2px;padding:7px 14px;font-size:13px;text-transform:uppercase}
+.alertbox .abody{padding:18px}
+.alertbox h2{border:0;color:#fff;font-size:19px;margin:0 0 8px;text-transform:none;padding:0}
+.alertbox .adesc{color:#aab6c2;font-size:13px;line-height:1.5}
+.alertbox.red{border-color:var(--red);box-shadow:0 0 90px rgba(248,113,113,.55);background:linear-gradient(180deg,#2a1212,#170b0b)}
+.alertbox.red .abar{background:var(--red);color:#2a0606}
+.alertbox.pizza{border-color:#ffd24d;box-shadow:0 0 90px rgba(255,210,77,.5)}
+.alertbox.pizza .abar{background:#ffd24d;color:#3a2a00}
+.bigpizza{font-size:64px;text-align:center;margin:4px 0}
+.pnl-pos{color:var(--green)}.pnl-neg{color:var(--red)}
+.octag{background:#3a1532;color:#f0a0e8;border:1px solid #7a2a68}
+.ecotag{background:#0e3325;color:#7adf8f;border:1px solid #1d5b30}
+.alertbox.genesis{border-color:#3fae6a;box-shadow:0 0 90px rgba(63,174,106,.4);background:linear-gradient(180deg,#0c1410,#070d09)}
+.alertbox.genesis .abar{background:#3fae6a;color:#03140a}
+.genesisbody{background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,255,128,.025) 2px 4px)}
+.gb-line{color:#67d98f;font-size:10.5px;word-break:break-all;margin:2px 0;text-shadow:0 0 6px rgba(60,220,120,.35)}
+.gb-coinbase{color:#ffd24d;font-size:14px;font-weight:700;margin:12px 0;border:1px dashed #6b5a23;padding:10px;background:rgba(255,210,77,.05);line-height:1.5}
+.gb-wp{color:#9aa6b3;font-style:italic;font-size:11.5px;margin-top:8px;line-height:1.5}
+.grp{background:#0d1115;border:1px solid var(--edge);border-radius:7px;padding:10px 12px;margin-bottom:8px}
+@media(max-width:900px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  body{font-size:13px}
+  #hdr{position:static}  /* the full header is too tall to pin on phones */
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:100%}
+  .chip{min-width:0;padding:3px 7px}
+  .chip .val{font-size:11px;overflow:hidden;text-overflow:ellipsis}
+  .logo{font-size:14px}
+  .tabs button{padding:7px 10px;font-size:11px}
+}
+</style>
+</head>
+<body>
+<div id="hdr"><div class="inner">
+  <div class="hrow">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 32 32"><defs><radialGradient id="coing" cx="35%" cy="30%"><stop offset="0%" stop-color="#ffd27a"/><stop offset="60%" stop-color="#f7931a"/><stop offset="100%" stop-color="#b3640a"/></radialGradient></defs>
+      <circle cx="16" cy="16" r="15" fill="url(#coing)" stroke="#7a4a0e" stroke-width="1.5"/>
+      <text x="16" y="22" font-size="17" font-weight="bold" text-anchor="middle" fill="#3a2604">&#8383;</text></svg>
+      MINING TYCOON
+    </div>
+    <div class="chips" id="hchips"></div>
+    <button class="sm" id="menubtn" onclick="A.openSettings()" title="Settings, save & load">&#9881; MENU</button>
+  </div>
+  <div class="timebar" id="timebar"></div>
+  <canvas id="minichart" onclick="A.tab('exch')" title="BTC/USD — mirrors the main price chart. Click for the full chart."></canvas>
+  <div class="tabs" id="tabs"></div>
+</div></div>
+<div class="wrap">
+  <div id="tickerwrap" title="Live news wire — most recent headlines"><div id="ticker"></div></div>
+  <div id="main"></div>
+</div>
+<div id="toasts"></div>
+<div id="modalhost"></div>
+<div id="alerthost"></div>
+<input type="file" id="importfile" accept=".json" style="display:none" onchange="A.importSave(event)">
+<script>
+'use strict';
+/* ============ RNG ============ */
+function RNG(seed){this.s=seed>>>0;this._sp=null;}
+RNG.prototype.next=function(){this.s=this.s+0x6D2B79F5|0;let t=Math.imul(this.s^this.s>>>15,1|this.s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+RNG.prototype.range=function(a,b){return a+(b-a)*this.next();};
+RNG.prototype.int=function(a,b){return Math.floor(this.range(a,b+1));};
+RNG.prototype.gauss=function(){let u=0,v=0;while(u===0)u=this.next();while(v===0)v=this.next();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+RNG.prototype.pick=function(a){return a[Math.floor(this.next()*a.length)];};
+RNG.prototype.chance=function(p){return this.next()<p;};
+function oneShot(seed){const r=new RNG(seed);r.next();r.next();return r.next();}
+function poisson(lam,rng){
+  if(lam<=0)return 0;
+  if(lam>40)return Math.max(0,Math.round(lam+Math.sqrt(lam)*rng.gauss()));
+  const L=Math.exp(-lam);let k=0,p=1;
+  do{k++;p*=rng.next();}while(p>L);
+  return k-1;
+}
+/* ============ DATES & FORMAT ============ */
+const EPOCH=Date.UTC(2009,0,3);
+const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function dayOf(s){const p=s.split('-');return Math.round((Date.UTC(+p[0],+p[1]-1,+p[2])-EPOCH)/864e5);}
+function dateOf(day){return new Date(EPOCH+day*864e5);}
+function fmtDate(day){const d=dateOf(day);return MO[d.getUTCMonth()]+' '+String(d.getUTCDate()).padStart(2,'0')+', '+d.getUTCFullYear();}
+function yearOf(day){return dateOf(day).getUTCFullYear();}
+function yearFrac(day){return 2009+(day+2)/365.25;}
+function fmtUSD(x){const neg=x<0?'-':'';x=Math.abs(x);return neg+'$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtPrice(x){
+  if(x<=0)return '—';
+  if(x<0.01)return '$'+x.toFixed(6);
+  if(x<1)return '$'+x.toFixed(4);
+  return '$'+x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtBigUSD(x){if(x>=1e15)return '$'+(x/1e15).toFixed(2)+'Q';if(x>=1e12)return '$'+(x/1e12).toFixed(2)+'T';if(x>=1e9)return '$'+(x/1e9).toFixed(2)+'B';if(x>=1e6)return '$'+(x/1e6).toFixed(2)+'M';return fmtUSD(x);}
+function fmtBTC(x){return '₿'+x.toFixed(8);}
+function fmtBTCs(x){return '₿'+(x>=1000?x.toLocaleString('en-US',{maximumFractionDigits:2}):x.toFixed(x>=1?4:8));}
+const HU=['H/s','kH/s','MH/s','GH/s','TH/s','PH/s','EH/s','ZH/s','YH/s'];
+function fmtHash(h){if(!h||h<=0)return '0 H/s';let i=0;while(h>=1000&&i<HU.length-1){h/=1000;i++;}return (h>=100?h.toFixed(0):h.toFixed(2))+' '+HU[i];}
+function fmtNum(x){if(x>=1e15)return (x/1e15).toFixed(2)+'P';if(x>=1e12)return (x/1e12).toFixed(2)+'T';if(x>=1e9)return (x/1e9).toFixed(2)+'G';if(x>=1e6)return (x/1e6).toFixed(2)+'M';if(x>=1e3)return (x/1e3).toFixed(2)+'k';return x.toFixed(x<10?2:0);}
+function fmtWatts(w){return w>=1e6?(w/1e6).toFixed(2)+' MW':w>=1000?(w/1000).toFixed(2)+' kW':w.toFixed(0)+' W';}
+function fmtDur(days){
+  if(!isFinite(days))return 'never';
+  if(days<1/24/60)return '<1 min';
+  if(days<1/24)return Math.round(days*1440)+' min';
+  if(days<1)return (days*24).toFixed(1)+' hrs';
+  if(days<60)return days.toFixed(1)+' days';
+  if(days<730)return (days/30.44).toFixed(1)+' months';
+  return (days/365.25).toFixed(1)+' years';
+}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function el(id){return document.getElementById(id);}
+/* ============ HARDWARE CATALOGS ============ */
+const CPUS=[
+  {id:'cpu1',name:'Beige Box Home PC',hash:5e6,watts:120,price:350,from:dayOf('2009-01-03')},
+  {id:'cpu2',name:'Gaming Tower (Quad Core)',hash:18e6,watts:300,price:850,from:dayOf('2009-01-03')},
+  {id:'cpu3',name:'Dual-Xeon Server Node',hash:45e6,watts:550,price:2400,from:dayOf('2009-06-01')},
+];
+// cu = "compute units": earning power on ETH (pre-merge) and AI-compute marketplaces. sha256 hash is for BTC mining only.
+const GPUS=[
+  {id:'g1',name:'Radiant HD 4850',hash:110e6,watts:130,price:180,from:dayOf('2010-07-18'),cu:0.2},
+  {id:'g2',name:'Radiant HD 5870',hash:400e6,watts:190,price:380,from:dayOf('2010-07-18'),cu:0.4},
+  {id:'g3',name:'Radiant HD 5970 (dual)',hash:640e6,watts:300,price:620,from:dayOf('2010-11-01'),cu:0.6},
+  {id:'g4',name:'Radiant HD 6990 (dual)',hash:760e6,watts:375,price:710,from:dayOf('2011-03-08'),cu:0.7},
+  {id:'g5',name:'Radiant HD 7970',hash:680e6,watts:230,price:550,from:dayOf('2012-01-09'),cu:1},
+  {id:'g6',name:'GFX 1070',hash:1.0e9,watts:150,price:380,from:dayOf('2016-06-10'),cu:3},
+  {id:'g7',name:'GFX 1080 Ti',hash:1.8e9,watts:250,price:700,from:dayOf('2017-03-10'),cu:5},
+  {id:'g8',name:'GFX 2080',hash:2.0e9,watts:215,price:700,from:dayOf('2018-09-20'),cu:7},
+  {id:'g9',name:'GFX 3080',hash:2.5e9,watts:320,price:700,from:dayOf('2020-09-17'),cu:12},
+  {id:'g10',name:'GFX 4090 (AI)',hash:3.0e9,watts:450,price:1600,from:dayOf('2022-10-12'),cu:25},
+  {id:'g11',name:'GFX 5090 (AI)',hash:3.5e9,watts:575,price:2000,from:dayOf('2025-01-30'),cu:45},
+  {id:'g12',name:'TensorRig TX100',hash:4.0e9,watts:700,price:3500,from:dayOf('2027-06-01'),cu:85},
+  {id:'g13',name:'TensorRig TX200',hash:4.5e9,watts:800,price:5200,from:dayOf('2030-01-01'),cu:150},
+];
+/* —— GPU side-hustles: ETH mining (until the Merge) and AI compute rental, both paying out in BTC —— */
+const ETH_START=dayOf('2016-01-15'), MERGE_DAY=dayOf('2022-09-15'), AI_START=dayOf('2022-12-01');
+function ethRate(day){ // BTC per CU per day — calibrated so a 6-card modern rig tracks S19-class profitability pre-merge
+  if(day<ETH_START||day>=MERGE_DAY)return 0;
+  const A=[[ETH_START,4e-5],[dayOf('2017-06-15'),1.3e-4],[dayOf('2017-12-15'),1.5e-4],[dayOf('2019-01-15'),2.5e-5],[dayOf('2020-06-01'),1.2e-5],[dayOf('2021-05-01'),1.1e-5],[MERGE_DAY,6e-6]];
+  for(let i=0;i<A.length-1;i++){
+    if(day>=A[i][0]&&day<A[i+1][0]){
+      const f=(day-A[i][0])/(A[i+1][0]-A[i][0]);
+      return Math.pow(10,Math.log10(A[i][1])*(1-f)+Math.log10(A[i+1][1])*f);
+    }
+  }
+  return A[0][1];
+}
+function aiRate(day){ // BTC per CU per day — AI boom ramps, then matures into steady growth
+  if(day<AI_START)return 0;
+  const y=(day-AI_START)/365.25;
+  return 6e-6*Math.pow(1.18,Math.min(y,6))*Math.pow(1.03,Math.max(0,y-6));
+}
+function cuOfRig(r){
+  if(r.kind!=='gpu'||r.broken||!r.online||!r.conn)return 0;
+  return r.cards.reduce((s,c)=>s+(findModel(c).cu||0),0)*(0.55+0.45*r.cond)*clkF(r).h;
+}
+const GPU_FRAME_PRICE=260;            // frame + tier-0 PSU (2 cards)
+const PSU_TIERS=[{cards:2,price:0,name:'650W PSU'},{cards:4,price:220,name:'1200W PSU'},{cards:6,price:420,name:'Dual 1500W PSU'}];
+const COOL_TIERS=[{price:0,name:'Stock fans',factor:1},{price:150,name:'High-CFM fan wall',factor:0.65},{price:450,name:'Liquid loop',factor:0.4}];
+const BASE_ASICS=[
+  {id:'a1', name:'AvalonForge Batch 1', hash:60e9,  watts:620, price:1300,from:dayOf('2013-02-01')},
+  {id:'a2', name:'AntForce S1',        hash:180e9, watts:360, price:1100,from:dayOf('2013-11-15')},
+  {id:'a3', name:'AntForce S3',        hash:440e9, watts:340, price:650, from:dayOf('2014-07-01')},
+  {id:'a4', name:'AntForce S5',        hash:1.15e12,watts:590,price:570, from:dayOf('2014-12-20')},
+  {id:'a5', name:'AntForce S7',        hash:4.7e12, watts:1290,price:1800,from:dayOf('2015-09-01')},
+  {id:'a6', name:'AntForce S9',        hash:13.5e12,watts:1320,price:2100,from:dayOf('2016-06-01')},
+  {id:'a7', name:'AntForce S17 Pro',   hash:53e12,  watts:2385,price:2800,from:dayOf('2019-04-09')},
+  {id:'a8', name:'AntForce S19 Pro',   hash:110e12, watts:3250,price:3500,from:dayOf('2020-05-12')},
+  {id:'a9', name:'AntForce S19 XP',    hash:140e12, watts:3010,price:4800,from:dayOf('2022-07-01')},
+  {id:'a10',name:'AntForce S21',       hash:200e12, watts:3500,price:4500,from:dayOf('2024-02-01')},
+  {id:'a11',name:'AntForce S23 Hydro', hash:320e12, watts:5000,price:6500,from:dayOf('2026-03-01')},
+];
+const FUTURE_NAMES=['HyperHash HX','Quantum QX','Fusion FX','Nexus NX','Titan TX','Vertex VX','Omega OX'];
+let ASICS=BASE_ASICS.slice();
+function extendAsics(day){
+  let last=ASICS[ASICS.length-1];
+  while(last.from<day+420){
+    const n=ASICS.length-BASE_ASICS.length;
+    last={id:'fa'+n,name:FUTURE_NAMES[n%FUTURE_NAMES.length]+' '+(1000+n*100),
+      hash:last.hash*1.6,watts:Math.min(9500,last.watts*1.06),price:Math.round(last.price*1.1),
+      from:last.from+Math.round(365*2.4)};
+    ASICS.push(last);
+  }
+}
+function findModel(id){return CPUS.find(m=>m.id===id)||GPUS.find(m=>m.id===id)||ASICS.find(m=>m.id===id);}
+/* ============ FARM CATALOG ============ */
+const FARM_TYPES=[
+  {id:'f0',name:'Home Garage',          cost:0,     rate:0.120,capKW:3,     slots:6,    from:0,                  desc:'Where it all begins. One dusty outlet strip.'},
+  {id:'f1',name:'Suburban Workshop',    cost:9000,  rate:0.110,capKW:15,    slots:16,   from:0,                  desc:'Converted double garage with 3-phase power.'},
+  {id:'f2',name:'Small Warehouse',      cost:55000, rate:0.095,capKW:120,   slots:48,   from:dayOf('2010-01-01'),desc:'Light-industrial unit near the rail yard.'},
+  {id:'f3',name:'Industrial Facility',  cost:380000,rate:0.080,capKW:1000,  slots:140,  from:dayOf('2012-01-01'),desc:'Old smelter floor. Serious amperage.'},
+  {id:'f4',name:'Rural Data Center',    cost:2.4e6, rate:0.055,capKW:8000,  slots:500,  from:dayOf('2014-01-01'),desc:'Cold climate, cheap hydro, long drive.'},
+  {id:'f5',name:'Hydro Mega-Campus',    cost:18e6,  rate:0.038,capKW:60000, slots:2400, from:dayOf('2017-01-01'),desc:'Dam-side halls humming day and night.'},
+  {id:'f6',name:'Arctic Geo Complex',   cost:140e6, rate:0.025,capKW:500000,slots:12000,from:dayOf('2021-01-01'),desc:'Geothermal plant with sub-zero free cooling.'},
+  {id:'f7',name:'Orbital-Cooled Giga Site',cost:1e9,rate:0.018,capKW:4e6,   slots:60000,from:dayOf('2030-01-01'),desc:'Radiative cooling arrays. The far frontier.'},
+];
+const FARM_COOL=[
+  {name:'Passive airflow',f:1,costF:0},
+  {name:'Industrial HVAC',f:0.75,costF:0.08},
+  {name:'Immersion cooling',f:0.5,costF:0.2},
+];
+function farmCoolCost(f){const t=FARM_TYPES.find(x=>x.id===f.typeId);return Math.max(1500,Math.round(Math.max(t.cost,9000)*FARM_COOL[f.coolTier+1].costF));}
+/* ============ MINING POOLS ============ */
+const POOLS=[
+  {id:'slush',  name:'Slush Pool',        from:dayOf('2010-11-27'),fee:0.02, w:2},
+  {id:'deepbit',name:'DeepBit',           from:dayOf('2011-02-26'),fee:0.03, w:3},
+  {id:'eligius',name:'Eligius',           from:dayOf('2012-01-15'),fee:0.01, w:1.5},
+  {id:'btcguild',name:'BTC Guild',        from:dayOf('2012-03-01'),fee:0.025,w:2.5},
+  {id:'ghash',  name:'GHash.IO',          from:dayOf('2013-07-01'),fee:0.0,  w:4},
+  {id:'btcchina',name:'BTC China Pool',   from:dayOf('2013-11-01'),fee:0.02, w:2},
+  {id:'f2pool', name:'F2Pool',            from:dayOf('2014-05-01'),fee:0.025,w:3.5},
+  {id:'antpool',name:'AntPool',           from:dayOf('2014-09-01'),fee:0.025,w:3.5},
+  {id:'btcc',   name:'BTCC Pool',         from:dayOf('2015-06-01'),fee:0.02, w:2},
+  {id:'viabtc', name:'ViaBTC',            from:dayOf('2016-06-01'),fee:0.02, w:2},
+  {id:'btccom', name:'BTC.com',           from:dayOf('2017-03-01'),fee:0.015,w:3},
+  {id:'poolin', name:'Poolin',            from:dayOf('2018-08-01'),fee:0.025,w:2.5},
+  {id:'luxor',  name:'Luxor Mining',      from:dayOf('2019-02-01'),fee:0.025,w:1.5},
+  {id:'binance',name:'Binance Pool',      from:dayOf('2020-04-01'),fee:0.025,w:3},
+  {id:'foundry',name:'Foundry USA',       from:dayOf('2020-11-01'),fee:0.0,  w:5},
+  {id:'helios', name:'Helios Hash',       from:dayOf('2026-06-01'),fee:0.015,w:3},
+  {id:'orbital',name:'Orbital Mining Collective',from:dayOf('2031-01-01'),fee:0.01,w:3.5},
+  {id:'fusion', name:'Fusion Hash Consortium',from:dayOf('2037-01-01'),fee:0.012,w:4},
+  {id:'dyson',  name:'Dyson Grid Pool',   from:dayOf('2050-01-01'),fee:0.008,w:5},
+];
+function activePools(){return POOLS.filter(p=>p.from<=S.day);}
+function curPool(){return null;} // mining mode is per-farm now (farmMode); kept for safety
+function poolShare(p){
+  const act=activePools(),tw=act.reduce((s,x)=>s+x.w,0);
+  if(p.id==='ghash'&&S.day>=dayOf('2014-01-01')&&S.day<dayOf('2014-09-01'))return 0.44+0.07*oneShot(S.set.seed+(S.day/30|0));
+  return p.w/tw*(0.85+0.3*oneShot(S.set.seed+p.from+(S.day/60|0)));
+}
+/* ============ PRICE MODEL ============ */
+const MARKET_OPEN=dayOf('2009-10-05');
+const PRICE_ANCHORS=[
+  [dayOf('2009-10-05'),0.0008],[dayOf('2010-07-01'),0.06],[dayOf('2011-01-01'),0.3],
+  [dayOf('2011-07-01'),2.0],[dayOf('2012-01-01'),4.5],[dayOf('2012-12-01'),12],
+  [dayOf('2013-06-01'),90],[dayOf('2014-01-01'),280],[dayOf('2015-01-01'),240],
+  [dayOf('2016-01-01'),420],[dayOf('2017-01-01'),1000],[dayOf('2018-01-01'),4200],
+  [dayOf('2019-01-01'),3600],[dayOf('2020-01-01'),7500],[dayOf('2021-01-01'),24000],
+  [dayOf('2022-01-01'),32000],[dayOf('2023-01-01'),19000],[dayOf('2024-01-01'),42000],
+  [dayOf('2025-01-01'),90000],[dayOf('2026-01-01'),100000],
+];
+function trendPrice(day){
+  if(day<MARKET_OPEN)return 0;
+  const A=PRICE_ANCHORS;
+  if(day>=A[A.length-1][0]){
+    const y=(day-A[A.length-1][0])/365.25;
+    // ~30% CAGR post-2027, declining with maturity: ~15% by 2060, ~8% by 2100, ~4-5% by 2140+
+    const lg=0.017*y+(0.097/0.0242)*(1-Math.exp(-0.0242*y));
+    return A[A.length-1][1]*Math.pow(10,lg);
+  }
+  for(let i=0;i<A.length-1;i++){
+    if(day>=A[i][0]&&day<A[i+1][0]){
+      const f=(day-A[i][0])/(A[i+1][0]-A[i][0]);
+      return Math.pow(10,Math.log10(A[i][1])*(1-f)+Math.log10(A[i+1][1])*f);
+    }
+  }
+  return A[0][1];
+}
+const HALVING_BASE=[dayOf('2012-11-28'),dayOf('2016-07-09'),dayOf('2020-05-11'),dayOf('2024-04-20')];
+function halvingDay(n){return n<HALVING_BASE.length?HALVING_BASE[n]:HALVING_BASE[3]+(n-3)*1461;}
+// "Unpaired timeline": same long-term trajectory, but cycle timing/peaks/crashes are pure seed — history is ignored
+function unpairedCycle(day,seed){
+  if(day<MARKET_OPEN)return 1;
+  let start=MARKET_OPEN,i=0,len=900;
+  for(let guard=0;guard<300;guard++){
+    len=Math.round(850+oneShot(seed^(i*7919+13))*1100);
+    if(day<start+len)break;
+    start+=len;i++;
+  }
+  const phase=(day-start)/len;
+  let amp=(i<1?9:4.5*Math.pow(0.9,i))*(0.45+1.1*oneShot(seed^(i*271+7)));
+  amp=Math.max(0.3,amp);
+  const peak=0.2+0.5*oneShot(seed^(i*613+3));
+  const wP=0.06+0.06*oneShot(seed^(i*97+11));
+  const trough=Math.min(0.95,peak+0.25+0.25*oneShot(seed^(i*431+5)));
+  const depth=0.3+0.3*oneShot(seed^(i*887+9));
+  const gp=Math.exp(-Math.pow(phase-peak,2)/(2*wP*wP));
+  const gt=Math.exp(-Math.pow(phase-trough,2)/(2*0.12*0.12));
+  return (1+amp*gp)*(1-depth*gt);
+}
+function cycleMult(day,seed){
+  if(day<MARKET_OPEN)return 1;
+  if(typeof S!=='undefined'&&S&&S.set&&S.set.unpaired)return unpairedCycle(day,seed);
+  let n=0;while(halvingDay(n)<=day)n++;          // cycle n: from halving n-1 (or genesis) to halving n
+  const start=n===0?0:halvingDay(n-1), end=halvingDay(n);
+  const phase=(day-start)/(end-start);
+  const AMPS=[14,4.2,3.3,1.25,0.65];
+  let amp=n<AMPS.length?AMPS[n]:Math.max(0.35,0.6*Math.pow(0.92,n-4));
+  amp*=0.8+0.5*oneShot(seed+n*977);
+  const peak=n===0?0.62:0.28+0.12*oneShot(seed+n*311);
+  const depth=0.4+0.15*oneShot(seed+n*523);
+  const trough=Math.min(0.93,peak+0.42);
+  // cycles compress as the asset matures: narrower, shallower swings each era
+  const wP=0.085*Math.pow(0.97,n), wT=0.13*Math.pow(0.98,n);
+  const gp=Math.exp(-Math.pow(phase-peak,2)/(2*wP*wP));
+  const gt=Math.exp(-Math.pow(phase-trough,2)/(2*wT*wT));
+  return (1+amp*gp)*(1-depth*Math.pow(0.96,Math.max(0,n-4))*gt);
+}
+// volatility compresses with maturity: full to 2030, macro-asset by 2050, reserve-like post-2100
+function volScale(day){const y=yearFrac(day);if(y<2030)return 1;return clamp(Math.pow(0.985,y-2030),0.22,1);}
+/* ============ NETWORK HASHRATE (log10 H/s anchors, excludes player) ============ */
+const HASH_ANCHORS=[
+  [0,6.6],[dayOf('2010-06-01'),8.5],[dayOf('2010-12-01'),11.0],[dayOf('2011-08-01'),13.0],
+  [dayOf('2012-12-01'),13.5],[dayOf('2013-12-01'),16.0],[dayOf('2015-01-01'),17.5],
+  [dayOf('2016-12-01'),18.4],[dayOf('2018-09-01'),19.7],[dayOf('2020-05-01'),20.08],
+  [dayOf('2022-01-01'),20.3],[dayOf('2024-04-01'),20.78],[dayOf('2026-01-01'),21.0],
+];
+function baseHashLog(day){
+  const A=HASH_ANCHORS;
+  if(day>=A[A.length-1][0]){
+    const y=(day-A[A.length-1][0])/365.25;
+    return A[A.length-1][1]+0.01*y+(0.06/0.05)*(1-Math.exp(-0.05*y));
+  }
+  for(let i=0;i<A.length-1;i++){
+    if(day>=A[i][0]&&day<A[i+1][0]){
+      const f=(day-A[i][0])/(A[i+1][0]-A[i][0]);
+      return A[i][1]*(1-f)+A[i+1][1]*f;
+    }
+  }
+  return A[0][1];
+}
+/* ============ ISSUANCE & FEES ============ */
+function rewardForEra(era){if(era>=33)return 0;return Math.floor(50e8/Math.pow(2,era))/1e8;}
+function feePerBlock(day,priceRatio){
+  const y=yearFrac(day);
+  if(y<2010.5)return 0;
+  let base=Math.min(1.2,Math.pow(10,-3+(y-2010)*0.18));
+  if(y>2050)base+= (Math.min(y,2140)-2050)*0.009;          // slow structural growth
+  if(y>2140)base*=Math.pow(1.012,y-2140);                  // post-subsidy fee market grows
+  return base*clamp(priceRatio,0.6,2.5);
+}
+/* ============ SCRIPTED HISTORICAL EVENTS ============ */
+// fx: {t:'shock',v} multiplies shock factor; {t:'hash',v} multiplies network hash;
+// {t:'hackS',v:shock,loss:frac} scripted exchange disaster (loss applies to exchange balance)
+// el[5]: 1 = anchor date (no jitter) · el[6]: 1 = MAJOR (breaking-news alert + auto-pause), 'pizza' = special
+const SCRIPT_EVENTS=[
+ ['2009-01-03','Genesis Block Mined','Satoshi Nakamoto mines block 0. The timestamp quotes a bank-bailout headline. The Bitcoin network is live.','neut',null,1,0],
+ ['2009-01-09','Bitcoin v0.1 Released','First open-source client published. A handful of cryptographers start mining.','neut',null,0,0],
+ ['2009-10-05','First Exchange Rate Published','New Liberty Standard prices BTC from electricity cost: $1 = 1,309 BTC. You can now trade coins for dollars.','bull',null,1,1],
+ ['2010-05-22','Bitcoin Pizza Day','Laszlo Hanyecz pays 10,000 BTC for two large pizzas. First real-world purchase of goods with bitcoin.','neut',null,1,'pizza'],
+ ['2010-07-11','Slashdot Effect','Bitcoin v0.3 hits Slashdot front page. Thousands of new users discover the project.','bull',{t:'shock',v:1.3},0,0],
+ ['2010-07-18','GPU Mining Era Begins','First OpenCL miners come online. Difficulty starts climbing fast — CPU mining is on borrowed time.','neut',null,1,1],
+ ['2010-11-27','First Mining Pool Goes Live','Slush announces "cooperative mining": miners combine hashrate and split every block found, proportional to work. Steady income, no more lottery. Pool mining is now available in the Rigs tab.','neut',null,1,1],
+ ['2011-02-09','Dollar Parity','1 BTC = $1.00 for the first time. Tech press takes notice.','bull',null,1,0],
+ ['2011-06-08','Bubble Peak Near $32','Parabolic rally tops out. Veterans warn of a blow-off top.','bear',null,0,0],
+ ['2011-06-19','Mt. Gox Security Breach','A compromised admin account crashes the Gox order book to pennies. Confidence badly shaken.','bear',{t:'shock',v:0.55},1,1],
+ ['2013-02-01','ASIC Era Begins','First application-specific miners ship to customers. Network hashrate is about to go vertical.','neut',null,1,1],
+ ['2013-03-25','Cyprus Bail-In Crisis','Cypriot deposit levy sends capital fleeing into bitcoin. Price goes vertical.','bull',{t:'shock',v:1.35},1,0],
+ ['2013-12-05','China Central Bank Ban','PBOC bars financial institutions from bitcoin. Price collapses from ~$1,200.','bear',{t:'shock',v:0.55},1,1],
+ ['2014-02-24','Mt. Gox Collapses','850,000 BTC missing. Gox files for bankruptcy. Coins left on exchanges are GONE.','bear',{t:'hackS',v:0.62,loss:1},1,1],
+ ['2014-06-13','GHash.IO Reaches 51% of the Network','A single pool briefly controls a majority of global hashrate. One operator could now double-spend or censor transactions. The community revolts; miners begin migrating to smaller pools.','bear',{t:'shock',v:0.9},1,1],
+ ['2016-08-02','Bitfinex Hacked','119,756 BTC drained from hot wallets. Exchange socializes losses across users.','bear',{t:'hackS',v:0.82,loss:0.36},1,1],
+ ['2017-12-10','Futures Launch at the Top','CBOE bitcoin futures go live as price nears $20,000. BTC-margined perpetual swaps unlock on the Exchange tab — only coins on the exchange can be posted as margin. Mainstream mania peaks.','bull',null,1,1],
+ ['2018-11-14','Crypto Winter Deepens','Hash-war chaos and capitulation. BTC breaks key support; miners shut down in droves.','bear',{t:'shock',v:0.62},1,0],
+ ['2019-05-07','Binance Hot Wallet Breach','7,000 BTC stolen via phished API keys. Insurance fund covers customer losses — this time.','bear',{t:'shock',v:0.93},1,0],
+ ['2020-03-12','COVID Black Thursday','Global margin call. Bitcoin halves in a single day alongside every other asset.','bear',{t:'shock',v:0.52},1,1],
+ ['2020-12-16','The Institutions Arrive','Corporate treasuries begin accumulating BTC. New all-time highs print.','bull',{t:'shock',v:1.25},1,0],
+ ['2021-05-21','China Bans Mining','State Council orders mining shutdown. Over half the global network goes dark within weeks.','bear',{t:'hash',v:0.48},1,1],
+ ['2021-11-10','All-Time High ~$69,000','Euphoria peaks as BTC touches $69K.','bull',null,1,1],
+ ['2022-05-09','LUNA / UST Death Spiral','Algorithmic stablecoin implodes, vaporizing $40B and dragging crypto down with it.','bear',{t:'shock',v:0.68},1,1],
+ ['2022-11-08','FTX Collapses','Customer funds were never there. Bankruptcy contagion rips through the industry.','bear',{t:'hackS',v:0.70,loss:1},1,1],
+ ['2024-01-10','Spot ETFs Approved','US regulators approve spot bitcoin ETFs. Wall Street gets a ticker.','bull',{t:'shock',v:1.3},1,1],
+ ['2025-01-20','The Six-Figure Era','Bitcoin consolidates above $100,000 as sovereign adoption rumors swirl.','bull',null,1,0],
+ /* —— Satoshi & Hal lore —— */
+ ['2009-01-11','Hal Finney: "Running bitcoin"','Legendary cryptographer Hal Finney becomes one of the very first to run the software, posting simply: "Running bitcoin". Tomorrow, Satoshi will send him the first transaction.','neut',null,1,0],
+ ['2009-01-12','The First Transaction','Block 170: Satoshi sends 10 BTC to Hal Finney. Two people on Earth are using the network. One of them invented it.','neut',null,1,0],
+ ['2009-10-31','One Year Since the Whitepaper','"A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution."','neut',null,0,0],
+ ['2010-07-29','Satoshi, to a Skeptic','"If you don\'t believe me or don\'t get it, I don\'t have time to try to convince you, sorry." — bitcointalk.org','neut',null,0,0],
+ ['2010-12-05','Satoshi: Don\'t Bring WikiLeaks Here','WikiLeaks considers accepting BTC donations. Satoshi objects: "No, don\'t bring it on. The project needs to grow gradually so the software can be strengthened along the way."','bear',null,0,0],
+ ['2010-12-11','Satoshi: "The Hornet\'s Nest"','"It would have been nice to get this attention in any other context. WikiLeaks has kicked the hornet\'s nest, and the swarm is headed towards us." It is one of his final public posts.','bear',null,1,0],
+ ['2011-04-26','Satoshi: "I\'ve Moved On"','In a last known email, Satoshi writes that he has "moved on to other things" and that bitcoin is "in good hands with Gavin and everyone." He is never heard from again. ~1M BTC in his wallets never move.','neut',null,1,1],
+ ['2013-03-19','Hal Finney: "Bitcoin and Me"','Paralyzed by ALS, Hal writes his farewell post: typing with his eyes, still coding. "My bitcoins are stored in our safe deposit box... I think they\'re safe enough. I\'m comfortable with my legacy."','neut',null,1,1],
+ ['2014-08-28','Hal Finney, 1956–2014','Bitcoin\'s first recipient passes after a five-year battle with ALS. The community mourns its first and kindest giant.','neut',null,1,1],
+ ['2013-12-18','"I AM HODLING"','A slightly tipsy forum post misspells "holding" mid-crash and accidentally coins bitcoin\'s most enduring word.','bull',null,0,0],
+ ['2021-02-15','Laser Eyes Until 100K','Profile pictures across the internet sprout laser eyes. It\'s a whole thing.','bull',null,0,0],
+ /* —— blocksize wars, forks, Craig Wright —— */
+ ['2015-08-15','Bitcoin XT Ignites the Blocksize War','A contentious client release splits the community over block size. Forums fracture, censorship accusations fly. The war will rage for two years.','bear',{t:'shock',v:0.95},0,0],
+ ['2016-02-21','The Hong Kong Agreement','Miners and developers shake hands on a scaling compromise. The handshake does not survive the flight home.','neut',null,0,0],
+ ['2016-05-02','Australian Claims to Be Satoshi','Craig Wright tells the BBC he invented bitcoin. Offered the trivially easy chance to prove it — sign a message with Satoshi\'s keys — he declines, citing "courage." The community is unconvinced.','neut',null,1,0],
+ ['2017-08-01','Chain Split: Bitcoin Cash Forks Off','The blocksize war reaches its endgame — big-blockers fork away as BCH. Holders receive coins on both chains; the market will pick a winner.','neut',null,1,1],
+ ['2017-08-24','SegWit Activates','After years of war, Segregated Witness locks in on the main chain, fixing malleability and opening the door to Lightning.','bull',null,1,0],
+ ['2017-11-08','SegWit2x Called Off','The corporate-backed hard fork is cancelled for lack of consensus. The little guys held the line.','bull',{t:'shock',v:1.08},0,0],
+ ['2018-11-16','BCH/BSV Hash War','Bitcoin Cash splits again as factions burn millions in hashpower to prove a point. Nobody wins.','bear',null,0,0],
+ ['2021-11-14','Taproot Activates','Bitcoin\'s biggest upgrade in four years brings Schnorr signatures and better privacy — activated with near-unanimous miner support.','bull',null,1,0],
+ ['2024-02-05','COPA v. Wright: The Satoshi Trial Begins','Craig Wright finally gets his day in a London court to prove he is Satoshi Nakamoto. His evidence includes documents with fonts that didn\'t exist yet.','neut',null,1,0],
+ ['2024-03-14','Court: Craig Wright Is NOT Satoshi','The judge rules the evidence "overwhelming": Wright did not write the whitepaper, did not create bitcoin, and lied "extensively and repeatedly." Satoshi remains anonymous. As it should be.','bull',null,1,1],
+ /* —— famous dated FUD —— */
+ ['2013-12-28','Nobel Economist: "Bitcoin Is Evil"','A celebrated columnist declares bitcoin evil and predicts its irrelevance. The fax-machine energy is strong.','bear',null,0,0],
+ ['2017-09-12','Mega-Bank CEO: "It\'s a Fraud"','"Worse than tulip bulbs. If any of our traders were trading it, I\'d fire them in a second." The same bank will run a crypto desk within four years.','bear',{t:'shock',v:0.93},1,0],
+ ['2018-05-05','"Rat Poison Squared"','The world\'s most famous value investor delivers the most quotable dismissal in bitcoin history. His partner adds that it\'s "contrary to the interests of civilization."','bear',null,1,0],
+ ['2018-10-11','"Mother of All Scams"','A famously gloomy economist tells a Senate committee that crypto is the mother of all scams and bubbles.','bear',null,0,0],
+ ['2019-07-12','US President: "Not a Fan"','"Bitcoin is not money, its value is highly volatile and based on thin air." The price shrugs.','bear',null,1,0],
+ ['2021-05-13','EV Giant Suspends BTC Payments','Citing energy concerns, the carmaker that bought $1.5B in bitcoin three months ago stops accepting it. The CEO\'s tweets now move markets more than the Fed.','bear',{t:'shock',v:0.9},1,0],
+ /* —— GPU side-economy —— */
+ ['2016-01-15','Ethereum Mining Goes Mainstream','GPU farms discover a second life: mine ETH, get paid in BTC through conversion pools. A new ETH POOL mode is available per-farm in the Rigs tab — GPU rigs only.','bull',null,1,1],
+ ['2022-09-15','THE MERGE — Ethereum Goes Proof-of-Stake','GPU mining on Ethereum ends forever at block 15,537,393. Millions of cards worldwide go dark overnight. Any of your farms in ETH POOL mode now earn NOTHING — switch them.','bear',null,1,1],
+ ['2022-12-01','The AI Boom Begins','A chatbot hits a million users in five days and suddenly everyone needs GPUs. Compute marketplaces rent clusters for AI training, paying in bitcoin — new AI COMPUTE mode available per-farm. Modern cards earn the most.','bull',null,1,1],
+];
+/* recurring FUD until ~2035 */
+const FUD_FIGURES=['a Nobel-winning economist','a mega-bank CEO','a famous gold pundit','a veteran short-seller','a US senator','a central-bank governor','a celebrated tech columnist','a billionaire fund manager','a primetime finance host'];
+const FUD_POOL=[
+ ['Bitcoin Declared Dead (Obituary #{N})','{F} pens the definitive obituary: "this time it\'s really over." The patient continues to disregard the diagnosis.'],
+ ['"No Intrinsic Value"','{F} patiently explains that bitcoin is backed by nothing — unlike paper money, which is backed by more paper money.'],
+ ['"Tulips, But Worse"','{F} compares bitcoin to the Dutch tulip mania. Tulip futures traders could not be reached for comment.'],
+ ['"Only Criminals Use It"','{F} warns that bitcoin is exclusively for crime, citing a report that found most crime still prefers dollars.'],
+ ['"It Can Never Scale"','{F} notes a card network does 24,000 TPS, "so bitcoin can never work as money." Settlement finality not discussed.'],
+ ['"It Will Boil the Oceans"','A viral study projects bitcoin will consume the world\'s entire electricity supply by {Y}. Previous deadline missed without comment.'],
+ ['"Governments Will Simply Ban It"','{F} announces that states will never tolerate it — from a podium in a country where it remains perfectly legal.'],
+ ['"Quantum Computers Will Break It Any Day"','{F} cites a lab result on 5 qubits. Cryptographers sigh audibly.'],
+ ['"Buy Gold Instead"','{F} has recommended gold over bitcoin at $8, $80, $800, and $8,000, and sees no reason to stop now.'],
+ ['"I Just Sold Everything"','A celebrity investor announces they have exited crypto entirely, marking the local bottom with impressive precision.'],
+ ['"It\'s Obviously a Ponzi"','{F} explains that an open-source protocol with no operator is a Ponzi scheme, but the 8% yield fund they run is not.'],
+ ['"Blockchain, Not Bitcoin"','Executives announce they love the database technology and hate the only successful application of it.'],
+ ['"It\'s Going to Zero"','{F} sets a firm price target of $0. Current price: {P}.'],
+ ['"My Grandchildren Will Never Use It"','{F}\'s grandchildren reportedly already have wallets.'],
+];
+/* ============ PROCEDURAL FUTURE EVENTS ============ */
+const EV_PLACES=['Norway','Argentina','Japan','Texas','Kazakhstan','Brazil','Germany','India','the UAE','Nigeria','Canada','South Korea','Paraguay','Iceland'];
+const EV_TEMPLATES=[
+ ['{C} Grants Bitcoin Legal Tender Status','Parliament votes to recognize BTC for taxes and settlement.','bull',1.18],
+ ['{C} Proposes Strict Mining Regulations','Draft law would cap industrial mining power draw.','bear',0.88],
+ ['Sovereign Wealth Fund Discloses BTC Position','Filing reveals a multi-billion dollar allocation accumulated quietly.','bull',1.15],
+ ['Major Bank Launches Bitcoin Custody','Tier-1 bank opens institutional custody desk.','bull',1.08],
+ ['Quantum Computing Scare Rattles Markets','Researchers claim progress against ECDSA. Cryptographers urge calm.','bear',0.85],
+ ['Energy Crisis Squeezes Miners in {C}','Grid emergency forces curtailment across industrial farms.','bear',0.93],
+ ['Payment Layer Adoption Milestone','Second-layer payment volume hits a new record.','bull',1.05],
+ ['G20 Agrees Crypto Tax Framework','Uniform reporting rules reduce regulatory uncertainty.','neut',1.0],
+ ['Grid Operators Embrace Demand-Response Mining','Miners paid to stabilize the grid in {C}.','bull',1.04],
+ ['Protocol Upgrade Activates Successfully','Soft fork locks in with overwhelming consensus.','bull',1.06],
+ ['Exchange Insolvency Rumors in {C}','Proof-of-reserves audit raises questions at a regional exchange.','bear',0.9],
+ ['Mining Hardware Breakthrough','Next-gen chips promise a major efficiency leap.','neut',1.0],
+];
+const HACK_EXCHANGES=['Coinporium','BitBazaar','SatoshiSwap','BlockTrade Global','MegaBit','VaultEx','NordCoin'];
+// 2028-2032: hyperbitcoinization era
+const EV_2028=[
+ ['{C} Adds Bitcoin to Strategic Reserves','Treasury discloses a multi-billion dollar BTC position accumulated quietly over 18 months.','bull',1.15],
+ ['Central Bank of {C} Calls BTC a Legitimate Store of Value','A first for a major monetary authority. Gold bugs and maximalists both claim victory.','bull',1.1],
+ ['First Sovereign Bond Denominated in BTC','{C} issues a 10-year note with coupons payable in bitcoin.','bull',1.08],
+ ['IMF Softens Stance on Bitcoin Reserves','New guidance permits member states to count BTC toward reserve adequacy ratios.','bull',1.07],
+ ['World Bank Pilots Bitcoin Settlement Rails','Cross-border development payments settle over Bitcoin layer-2 networks.','bull',1.04],
+ ['BTC/USD Joins the Nightly News Ticker','The exchange rate is now quoted alongside oil and the 10-year yield.','neut',1],
+ ['Major Retail Chain Rolls Out BTC-Denominated Pricing','Dual price tags appear across 4,000 stores in {C}.','bull',1.04],
+ ['First Major City Accepts Property Tax in BTC','{C} municipality begins taking sat-denominated tax payments.','bull',1.03],
+];
+// 2032-2050: futuristic use cases
+const EV_2032=[
+ ['Lightning Routing Capacity Hits New Record','Layer-2 liquidity milestone: channel count and routed volume at all-time highs.','bull',1.04],
+ ['{C} Enacts Multi-Jurisdictional Custody Framework','Sovereign wealth funds gain legal clarity for multi-sig custody across borders.','bull',1.06],
+ ['Listed Company Loses Keys to Treasury','A public firm admits its multi-billion BTC treasury is permanently unrecoverable. Supply just got scarcer; shareholders just got poorer.','bear',0.92],
+ ['Bitcoin L2 Smart Contracts Reach Ecosystem Parity','Developers report feature parity with legacy smart-contract chains.','bull',1.05],
+ ['First BTC-Backed Mortgage Approved by G7 Regulator','Collateralized sat-mortgages clear final regulatory review in {C}.','bull',1.06],
+ ['Lunar Base Accepts BTC Micropayments','Off-world commerce settles over delayed-broadcast Lightning channels.','neut',1],
+ ['AI-Managed Bitcoin Treasury Funds Go Mainstream','Autonomous allocators now steward double-digit percentages of institutional BTC.','bull',1.04],
+ ['Quantum Breakthrough Rattles Cryptography','Lab demo against ECDSA sparks a selloff — and an emergency protocol upgrade roadmap.','bear',0.82],
+ ['Quantum-Resistant Upgrade Locks In','Post-quantum signature soft fork activates with near-unanimous consensus. Crisis averted.','bull',1.12],
+ ['First Block Verified From Orbit','Satellite full nodes confirm a block entirely off-planet.','neut',1],
+];
+// post-2050: institutional / technological / macro
+const EV_2050=[
+ ['BTC Volatility Index Hits Record Low','The asset now trades like a global reserve instrument.','neut',1],
+ ['Intergenerational Wealth Funds Rebalance Into BTC','Century-horizon allocators lift target weights again.','bull',1.04],
+ ['Fusion-Powered Mining Margin Wars','Energy abundance compresses fees; efficiency is everything.','bear',0.96],
+ ['Global Settlement Layer Throughput Upgrade','Base-layer optimization ships after a decade of review.','bull',1.03],
+ ['Reserve Basket Rebalancing Adds BTC Weight','Supranational reserve frameworks lift bitcoin allocations.','bull',1.05],
+ ['Mining Heat-Reuse Standard Adopted Globally','District heating powered by hashrate becomes the default.','neut',1],
+];
+// ongoing flavor, post-2028
+const EV_FLAVOR=[
+ ['Satoshi-Era Wallet Stirs','Coins untouched since 2010 move two hops, then go quiet. Forums melt down.','bear',0.95],
+ ['Bitcoin Day Celebrations Go Global','Block-height fireworks, pizza discounts, and a public holiday in {C}.','neut',1],
+ ['Auction House Completes Sale Exclusively in BTC','A landmark art collection clears entirely in sats.','bull',1.02],
+ ['Candidate Runs on a Bitcoin-Standard Platform','Polling surprisingly well in {C}.','neut',1],
+];
+/* ============ STATE ============ */
+let S=null;          // game state
+let rng=null;        // world RNG (state saved)
+const batch={blocks:0,btc:0,fails:0,toasts:[]};   // per-step-batch aggregation
+function defaultSettings(){
+  return {startCash:500,luck:1,fail:1,powerMod:1,vol:1,hackFreq:900,loansOn:true,seed:Math.floor(Math.random()*2**31),
+    notifMajor:true,notifHack:true,notifHw:true,notifBlocks:true,notifMile:true,unpaired:false};
+}
+function buildSchedule(seed){
+  const r=new RNG(seed^0x5EEDFACE);
+  const evs=[];
+  for(const e of SCRIPT_EVENTS){
+    const base=dayOf(e[0]);
+    // every run shifts history: ±10-15% style timing jitter (anchor events shift less)
+    let d=base+Math.round(clamp(r.gauss()*(e[5]?8:18),-50,50));
+    if(base===0)d=0;
+    evs.push({day:Math.max(0,d),head:e[1],desc:e[2],imp:e[3],fx:e[4],maj:e[6]||0});
+    if(e[4]&&e[4].t==='hackS'){
+      evs.push({day:Math.max(0,d-6),head:'Withdrawal Delays at a Major Exchange',
+        desc:'Users report stuck withdrawals and vague "maintenance" notices. Security researchers voice concerns. If you hold coins on an exchange, think hard.',
+        imp:'bear',fx:null});
+    }
+  }
+  evs.sort((a,b)=>a.day-b.day);
+  return evs;
+}
+function newGame(settings){
+  const set=settings||defaultSettings();
+  rng=new RNG(set.seed);
+  extendAsics(0);
+  S={
+    v:1,set:set,day:0,speed:'pause',tab:'dash',
+    cash:set.startCash,wallet:0,exch:0,
+    price:0,mom:0,shock:1,hashMod:1,netLog:HASH_ANCHORS[0][1],
+    totalBlocks:0,rewardEra:0,supply:0,sinceAdjust:0,difficulty:1,lastDiffNews:-999,lastBlockMilestone:0,
+    blocksFound:0,btcMined:0,btcSoldTotal:0,
+    rigs:[],farms:[{id:1,typeId:'f0',name:'Home Garage',capKW:3,rate:0.12,slots:6,upg:0,bought:0,coolTier:0,mode:'solo'}],
+    nextId:2,loans:[],creditFreeze:0,pendingPower:0,unpaidBill:0,
+    pool:null,poolEarned:0,limitOrders:[],positions:[],futuresOn:false,nextPosId:1,
+    alertQueue:[],lastBlockDay:null,priceMil:{},lastCrash:-999,
+    seenHw:[].concat(CPUS,GPUS,ASICS).filter(m=>m.from<=0).map(m=>m.id),
+    tradeLog:[],perpPnl:0,spotBuyUsd:0,spotSellUsd:0,
+    feeRate:1,volEMA:0,nextFud:dayOf('2011-02-01'),fudN:0,
+    events:buildSchedule(set.seed),evIdx:0,
+    nextHack:0,hackWarned:0,procYear:2025,
+    news:[],priceHistory:[],milestones:{},
+    stats:{rev:0,cost:0,foundY:0,temp:38},
+    rngS:0,
+  };
+  // starter rig — arrives powered off and not connected
+  S.rigs.push({id:1,kind:'cpu',model:'cpu1',farmId:1,cond:1,online:false,conn:false,broken:false,clk:0,bought:0,invested:0});
+  scheduleNextHack(MARKET_OPEN+200);
+  queueAlert({kind:'genesis',head:'THE GENESIS BLOCK',body:'The Times 03/Jan/2009 — Chancellor on brink of second bailout for banks.',imp:'neut'});
+  pushNews(0,'Welcome to the Frontier','You have one beige PC, $'+set.startCash.toLocaleString()+', and a copy of bitcoin v0.1. First job: open the Rigs tab, flip the power on (⏻) and connect it to the network (⇅). Then mine blocks, survive the cycles, build an empire.','neut',true);
+}
+function scheduleNextHack(after){
+  const f=S.set.hackFreq;
+  if(!f){S.nextHack=Infinity;return;}
+  S.nextHack=Math.round(after+f*(0.7+0.6*rng.next()));
+  S.hackWarned=0;
+}
+/* ============ RIG HELPERS ============ */
+function rigModel(r){return findModel(r.model);}
+function rigName(r){
+  if(r.kind==='gpu')return 'GPU Rig #'+r.id+' ('+r.cards.length+'/'+PSU_TIERS[r.psu].cards+' cards)';
+  return rigModel(r).name+' #'+r.id;
+}
+function rigHashMax(r){
+  if(r.kind==='gpu')return r.cards.reduce((s,c)=>s+findModel(c).hash,0);
+  return rigModel(r).hash;
+}
+// model-specific overclock headroom: hash gain / power gain
+function ocFactors(r){
+  if(r.kind==='cpu')return {h:1.05,p:1.12};   // minimal CPU headroom
+  if(r.kind==='gpu')return {h:1.15,p:1.30};   // 10-20% hash, big heat/power jump
+  return {h:1.13,p:1.18};                     // ASIC: e.g. S9 13.5 -> ~15.3 TH/s @ ~1560W
+}
+// underclock: efficiency mode — small hash loss, big power saving, gentler wear
+function ucFactors(r){
+  if(r.kind==='cpu')return {h:0.95,p:0.88};
+  if(r.kind==='gpu')return {h:0.85,p:0.68};
+  return {h:0.85,p:0.70};                     // ASIC: J/TH improves ~18%
+}
+function clkF(r){return r.clk===1?ocFactors(r):r.clk===-1?ucFactors(r):{h:1,p:1};}
+function hasCooling(r){
+  const f=getFarm(r.farmId);
+  return (f&&(f.coolTier||0)>=1)||(r.kind==='gpu'&&r.cool>=1);
+}
+function rigHash(r){
+  if(r.broken||!r.online||!r.conn)return 0;
+  return rigHashMax(r)*(0.55+0.45*r.cond)*clkF(r).h;
+}
+function rigMining(r){return r.online&&!r.broken&&r.conn;}
+function rigWatts(r){
+  const base=r.kind==='gpu'?60+r.cards.reduce((s,c)=>s+findModel(c).watts,0):rigModel(r).watts;
+  return base*clkF(r).p;
+}
+function rigInvested(r){
+  if(r.kind==='gpu')return r.invested;
+  return rigModel(r).price;
+}
+function bestEff(){ // best available efficiency hash/watt for obsolescence calc
+  let best=0;
+  for(const m of [].concat(CPUS,GPUS,ASICS))if(m.from<=S.day)best=Math.max(best,m.hash/m.watts);
+  return best;
+}
+function rigResale(r){
+  const inv=rigInvested(r)||1;
+  const hash=rigHashMax(r);if(hash<=0)return Math.round(inv*0.3);
+  const eff=hash/rigWatts(r);
+  const obs=Math.min(1,Math.pow(eff/bestEff(),0.55));
+  const age=(S.day-r.bought)/365.25;
+  return Math.max(5,Math.round(inv*0.55*r.cond*Math.pow(0.85,age)*Math.max(0.08,obs)));
+}
+function farmRigs(fid){return S.rigs.filter(r=>r.farmId===fid);}
+function farmHash(f){return farmRigs(f.id).reduce((s,r)=>s+rigHash(r),0);}
+function farmCU(f){return farmRigs(f.id).reduce((s,r)=>s+cuOfRig(r),0);}
+function farmMode(f){return f.mode||'solo';}
+function soloHashTotal(){return S.farms.reduce((s,f)=>{
+  const m=farmMode(f);
+  if(m==='solo')return s+farmHash(f);
+  if(m==='eth'||m==='ai'||m==='aiusd')return s;
+  return POOLS.some(p=>p.id===m&&p.from<=S.day)?s:s+farmHash(f); // pool not open yet -> mines solo
+},0);}
+function farmWattsInstalled(f){return farmRigs(f.id).reduce((s,r)=>s+rigWatts(r),0);}
+function farmWattsActive(f){return farmRigs(f.id).reduce((s,r)=>s+((r.online&&!r.broken)?rigWatts(r):0),0);}
+function playerHash(){return S.rigs.reduce((s,r)=>s+rigHash(r),0);}
+function playerHashMax(){return S.rigs.reduce((s,r)=>s+rigHashMax(r),0);}
+function totalActiveWatts(){return S.farms.reduce((s,f)=>s+farmWattsActive(f),0);}
+function networkOthers(){return Math.pow(10,S.netLog)*S.hashMod;}
+function networkTotal(){return networkOthers()+playerHash();}
+function dailyPowerCost(){return S.farms.reduce((s,f)=>s+farmWattsActive(f)/1000*24*f.rate*S.set.powerMod,0);}
+function curReward(){return rewardForEra(S.rewardEra);}
+function curFee(){const t=trendPrice(S.day);return feePerBlock(S.day,t>0?S.price/t:1);}
+function expectedDailyBTC(){
+  const nt=networkTotal();let total=0;
+  for(const f of S.farms){
+    const mode=farmMode(f);
+    if(mode==='eth')total+=farmCU(f)*ethRate(S.day)*0.98;
+    else if(mode==='ai')total+=farmCU(f)*aiRate(S.day)*0.98;
+    else if(mode==='aiusd')total+=farmCU(f)*aiRate(S.day)*0.99; // paid in USD; BTC-equivalent shown
+    else{
+      const fh=farmHash(f);if(fh<=0||nt<=0)continue;
+      const p=mode==='solo'?null:POOLS.find(x=>x.id===mode&&x.from<=S.day);
+      total+=fh/nt*144*(curReward()+curFee())*S.set.luck*(p?1-p.fee:1);
+    }
+  }
+  return total;
+}
+function hwValue(){return S.rigs.reduce((s,r)=>s+rigResale(r),0);}
+// property appreciates ~3-4%/yr regardless of BTC; better locations a touch faster
+function farmValue(f){
+  const t=FARM_TYPES.find(x=>x.id===f.typeId);
+  if(!t||t.cost<=0)return 0;
+  const years=Math.max(0,(S.day-(f.bought||0))/365.25);
+  const rate=0.033+0.004*(FARM_TYPES.indexOf(t)/(FARM_TYPES.length-1));
+  return Math.round(t.cost*Math.pow(1+rate,years));
+}
+function propValue(){return S.farms.reduce((s,f)=>s+farmValue(f),0);}
+function netWorth(){return S.cash+(S.wallet+S.exch)*S.price+hwValue()+propValue();}
+/* ============ NEWS / TOASTS / MILESTONES ============ */
+function pushNews(day,head,desc,imp,major){
+  S.news.unshift({d:day,h:head,b:desc,i:imp,m:!!major});
+  if(S.news.length>400)S.news.length=400;
+}
+function toast(title,body){batch.toasts.push({t:title,b:body});}
+function logTrade(k,txt,pnlBtc){S.tradeLog.unshift({d:S.day,k,t:txt,p:pnlBtc===undefined?null:pnlBtc});if(S.tradeLog.length>120)S.tradeLog.length=120;}
+function flushToasts(){
+  const host=el('toasts');
+  for(const t of batch.toasts.splice(0,5)){
+    const d=document.createElement('div');d.className='toast';
+    d.innerHTML='<b>'+t.t+'</b><div class="tb">'+t.b+'</div>';
+    host.appendChild(d);
+    setTimeout(()=>{d.style.transition='opacity .4s';d.style.opacity='0';setTimeout(()=>d.remove(),420);},4600);
+  }
+  batch.toasts.length=0;
+}
+function milestone(key,title,body){
+  if(S.milestones[key])return;
+  S.milestones[key]=S.day;
+  toast('🏆 '+title,body);
+  pushNews(S.day,'Milestone: '+title,body,'neut',true);
+}
+function checkMilestones(){
+  if(S.blocksFound>=1)milestone('blk1','First Block Found','You mined a block solo. The coinbase reward is yours.');
+  if(S.blocksFound>=10)milestone('blk10','10 Blocks Found','Double digits. The ledger knows your name.');
+  if(S.blocksFound>=100)milestone('blk100','100 Blocks Found','A hundred coinbase rewards and counting.');
+  if(S.blocksFound>=1000)milestone('blk1000','1,000 Blocks Found','Industrial-scale block production.');
+  if(S.wallet+S.exch>=100)milestone('btc100','100 BTC Stacked','Triple-digit coins under your control.');
+  if(S.wallet+S.exch>=10000)milestone('btc10k','10,000 BTC Stacked','Pizza guy could never.');
+  const nw=netWorth();
+  if(nw>=1e6)milestone('m1','Millionaire','Net worth crossed $1,000,000.');
+  if(nw>=1e8)milestone('m100','$100M Operator','Nine figures of mining empire.');
+  if(nw>=1e9)milestone('b1','Billionaire','Net worth crossed $1,000,000,000.');
+  if(yearOf(S.day)>=2140)milestone('y2140','The Last Satoshi Era','You mined into the fee-only epoch. Legend.');
+}
+/* ============ SIMULATION: ONE DAY ============ */
+function stepDay(){
+  S.day++;
+  const day=S.day, date=dateOf(day), prevDate=dateOf(day-1);
+  extendAsics(day);
+  /* --- new hardware hits the market --- */
+  for(const m of [].concat(CPUS,GPUS,ASICS)){
+    if(m.from<=day&&!S.seenHw.includes(m.id)){
+      S.seenHw.push(m.id);
+      const kind=CPUS.includes(m)?'CPU miner':GPUS.includes(m)?'GPU card':'ASIC miner';
+      pushNews(day,'🛒 New Hardware: '+m.name,'New '+kind+' available in the shop — '+fmtHash(m.hash)+' at '+fmtWatts(m.watts)+' for '+fmtUSD(m.price)+' ('+effStr(m)+').','neut',false);
+      if(S.set.notifHw)toast('🛒 New in Shop',m.name+' — '+fmtHash(m.hash)+' for '+fmtUSD(m.price));
+    }
+  }
+  /* --- global blocks & halvings --- */
+  const blocksToday=Math.max(100,Math.round(146+rng.gauss()*8));
+  const reward=curReward();
+  S.totalBlocks+=blocksToday;
+  S.supply=Math.min(21e6,S.supply+blocksToday*reward);
+  S.sinceAdjust+=blocksToday;
+  const era=Math.floor(S.totalBlocks/210000);
+  if(era>S.rewardEra&&S.rewardEra<34){
+    S.rewardEra=era;
+    const nr=rewardForEra(era);
+    if(nr>0){
+      pushNews(day,'⚡ HALVING #'+era+' — Block Reward Now '+nr+' BTC','Block '+ (era*210000).toLocaleString()+' mined. Subsidy cut in half. Miner margins compress; scarcity narrative ignites.','bull',true);
+      queueAlert({kind:'news',head:'⚡ HALVING #'+era,body:'Block '+(era*210000).toLocaleString()+' has been mined. The block reward just dropped to '+nr+' BTC. Half the new supply, same demand — you know how this story goes. Check that your fleet is still profitable.',imp:'bull'});
+      if(S.rigs.some(r=>r.online&&!r.broken))milestone('halv'+era,'Survived Halving #'+era,'Your operation kept hashing through the subsidy cut.');
+    }else{
+      pushNews(day,'⚡ THE FINAL HALVING — Block Subsidy Reaches Zero','All 21,000,000 BTC have effectively been issued. From here on, miners live on transaction fees alone.','neut',true);
+      queueAlert({kind:'news',head:'⚡ THE LAST SATOSHI',body:'The block subsidy has reached zero. All 21,000,000 BTC are issued. From this block forward, miners are paid in transaction fees alone — and you\'re still here.',imp:'neut'});
+    }
+  }
+  /* --- difficulty adjustment --- */
+  if(S.sinceAdjust>=2016){
+    S.sinceAdjust-=2016;
+    const newDiff=Math.max(1,networkTotal()/7.16e6);
+    const chg=S.difficulty>0?(newDiff/S.difficulty-1)*100:0;
+    S.difficulty=newDiff;
+    if(Math.abs(chg)>8&&day-S.lastDiffNews>56){
+      S.lastDiffNews=day;
+      pushNews(day,'Difficulty Adjusts '+(chg>0?'+':'')+chg.toFixed(1)+'%','Network difficulty is now '+fmtNum(newDiff)+'. '+(chg>0?'More competition for every block.':'Easier blocks for survivors.'),chg>0?'bear':'bull',false);
+    }
+  }
+  if(S.totalBlocks-S.lastBlockMilestone>=100000){
+    S.lastBlockMilestone=Math.floor(S.totalBlocks/100000)*100000;
+    pushNews(day,'Block '+S.lastBlockMilestone.toLocaleString()+' Mined','The chain grows. Circulating supply: '+(S.supply/1e6).toFixed(2)+'M BTC of 21M.','neut',false);
+  }
+  /* --- price tick --- */
+  const trend=trendPrice(day);
+  S.shock=1+(S.shock-1)*0.985;
+  if(day>=MARKET_OPEN&&trend>0){
+    if(S.price<=0)S.price=trend;
+    const target=trend*cycleMult(day,S.set.seed)*S.shock;
+    const vol=S.set.vol*volScale(day);
+    S.mom=S.mom*0.9+rng.gauss()*0.012*vol;
+    let lp=Math.log(S.price)+0.045*(Math.log(target)-Math.log(S.price))+rng.gauss()*0.028*vol+S.mom;
+    S.price=clamp(Math.exp(lp),trend*0.04,trend*60);
+    // random black swans / squeezes
+    if(rng.chance(1/700*vol)&&S.shock>0.85){
+      S.shock*=rng.range(0.5,0.7);
+      pushNews(day,'Flash Crash','Cascading liquidations rip through thin order books. Price gaps down double digits.','bear',true);
+    } else if(rng.chance(1/950)){
+      S.shock*=rng.range(1.15,1.4);
+      pushNews(day,'Short Squeeze Rally','Aggressive buying forces shorts to cover. Price rips higher.','bull',false);
+    }
+    S.priceHistory.push([day,+S.price.toPrecision(6)]);
+    if(S.priceHistory.length>16000){ // decimate oldest half to weekly
+      const cut=Math.floor(S.priceHistory.length/2);
+      const old=S.priceHistory.slice(0,cut).filter((p,i)=>i%7===0);
+      S.priceHistory=old.concat(S.priceHistory.slice(cut));
+    }
+    // landmark price milestones — breaking-news alert + auto-pause, once each
+    for(const t of [1,100,1000,10000,100000,1000000]){
+      if(S.price>=t&&!S.priceMil[t]){
+        S.priceMil[t]=1;
+        const lab=t<1000?'$'+t:t<1e6?'$'+(t/1000)+',000':'$1,000,000';
+        if(S.set.notifMile)queueAlert({kind:'news',head:'BITCOIN CROSSES '+lab,body:'For the first time in history, one bitcoin is worth '+lab+'. '+(t===1?'From cryptographic toy to real money.':t>=1e6?'Seven figures. The skeptics have gone quiet.':'Another zero falls.'),imp:'bull'});
+        pushNews(day,'Bitcoin Crosses '+lab,'1 BTC = '+lab+' for the first time.','bull',true);
+      }
+    }
+    // >20% single-day crash detection
+    const hl=S.priceHistory.length;
+    if(hl>=2){
+      const prev=S.priceHistory[hl-2][1],chg=S.price/prev-1;
+      if(chg<=-0.20&&day-S.lastCrash>30){
+        S.lastCrash=day;
+        queueAlert({kind:'red',head:'MARKET CRASH — '+Math.round(chg*100)+'% IN 24 HOURS',body:'Bitcoin plunged from '+fmtPrice(prev)+' to '+fmtPrice(S.price)+' in a single day. Cascading liquidations, frozen order books, panic everywhere.',imp:'bear'});
+        pushNews(day,'Market Crash: '+Math.round(chg*100)+'% in 24h','From '+fmtPrice(prev)+' to '+fmtPrice(S.price)+'.','bear',true);
+      }
+    }
+  }
+  if(!S.futuresOn&&day>=dayOf('2017-12-01'))S.futuresOn=true;
+  /* --- fee market (sat/vB): adoption baseline × volatility spikes × bull congestion --- */
+  {
+    const hN=S.priceHistory.length;
+    if(hN>=2)S.volEMA=0.92*S.volEMA+0.08*Math.abs(S.priceHistory[hN-1][1]/S.priceHistory[hN-2][1]-1);
+    const base=clamp(Math.pow(Math.max(0,yearFrac(day)-2009.7),1.5)*0.7,0.5,45);
+    const bull=trend>0?clamp(S.price/trend,0.5,3):1;
+    S.feeRate=clamp(Math.round(base*(0.4+S.volEMA*55)*Math.pow(bull,1.4)*(0.8+rng.next()*0.4)),1,3000);
+  }
+  /* --- network hashrate evolves --- */
+  const pr=trend>0?clamp(S.price/trend,0.2,8):1;
+  const targetLog=baseHashLog(day)+0.35*Math.log10(pr);
+  S.netLog+=0.03*(targetLog-S.netLog)+rng.gauss()*0.004;
+  S.hashMod=1+(S.hashMod-1)*Math.exp(-1/150);
+  /* --- player mining: per-farm modes (solo lottery / BTC pool / ETH pool / AI compute) --- */
+  const ph=playerHash(), nt=networkOthers()+ph;
+  let foundBTC=0,found=0,soloHash=0,steadyBTC=0;
+  for(const f of S.farms){
+    const mode=farmMode(f);
+    if(mode==='eth'||mode==='ai'||mode==='aiusd'){
+      const rate=mode==='eth'?ethRate(day):aiRate(day);
+      if(rate>0){
+        const amt=farmCU(f)*rate*(0.9+0.2*rng.next());
+        if(mode==='aiusd')S.cash+=amt*0.99*S.price;   // USD payouts straight to the bank, 1% fee
+        else steadyBTC+=amt*0.98;                      // BTC payouts, 2% marketplace fee
+      }
+    }else if(mode==='solo'){
+      soloHash+=farmHash(f);
+    }else{
+      const p=POOLS.find(x=>x.id===mode&&x.from<=day);
+      const fh=farmHash(f);
+      if(p&&fh>0&&nt>0)steadyBTC+=blocksToday*(fh/nt)*(reward+curFee())*S.set.luck*(1-p.fee)*(0.92+0.16*rng.next());
+      else soloHash+=fh;   // pool not open yet — farm mines solo
+    }
+  }
+  if(steadyBTC>0){
+    S.wallet+=steadyBTC;S.btcMined+=steadyBTC;S.poolEarned+=steadyBTC;foundBTC+=steadyBTC;
+    batch.btc+=steadyBTC;
+  }
+  if(soloHash>0&&nt>0){
+    const lam=blocksToday*(soloHash/nt)*S.set.luck;
+    found=poisson(lam,rng);
+    if(found>0){
+      const fb=found*(reward+curFee());
+      S.wallet+=fb;S.blocksFound+=found;S.btcMined+=fb;S.lastBlockDay=day;foundBTC+=fb;
+      batch.blocks+=found;batch.btc+=fb;
+    }
+  }
+  S.stats.foundY=foundBTC;
+  /* --- limit orders --- */
+  if(S.limitOrders.length&&S.price>0){
+    for(let i=S.limitOrders.length-1;i>=0;i--){
+      const o=S.limitOrders[i];
+      if(o.side==='buy'&&S.price<=o.price){
+        const cost=o.qty*o.price;
+        S.limitOrders.splice(i,1);
+        if(S.cash>=cost){S.cash-=cost;S.exch+=o.qty;S.spotBuyUsd+=cost;logTrade('limit-buy','LIMIT BUY filled: '+fmtBTC(o.qty)+' @ '+fmtPrice(o.price)+' — paid '+fmtUSD(cost));toast('✓ Limit Buy Filled',fmtBTCs(o.qty)+' @ '+fmtPrice(o.price));pushNews(day,'Limit Buy Filled',fmtBTCs(o.qty)+' @ '+fmtPrice(o.price)+' ('+fmtUSD(cost)+'). Coins are on the exchange.','neut',false);}
+        else{logTrade('limit-cancel','LIMIT BUY cancelled at '+fmtPrice(o.price)+' — insufficient cash');pushNews(day,'Limit Buy Cancelled','Price hit '+fmtPrice(o.price)+' but you lacked the cash to fill it.','neut',false);}
+      }else if(o.side==='sell'&&S.price>=o.price){
+        S.limitOrders.splice(i,1);
+        if(S.exch>=o.qty){S.exch-=o.qty;S.cash+=o.qty*o.price;S.btcSoldTotal+=o.qty;S.spotSellUsd+=o.qty*o.price;logTrade('limit-sell','LIMIT SELL filled: '+fmtBTC(o.qty)+' @ '+fmtPrice(o.price)+' — received '+fmtUSD(o.qty*o.price));toast('✓ Limit Sell Filled',fmtBTCs(o.qty)+' @ '+fmtPrice(o.price));pushNews(day,'Limit Sell Filled',fmtBTCs(o.qty)+' @ '+fmtPrice(o.price)+' ('+fmtUSD(o.qty*o.price)+').','neut',false);}
+        else{logTrade('limit-cancel','LIMIT SELL cancelled at '+fmtPrice(o.price)+' — BTC not on exchange');pushNews(day,'Limit Sell Cancelled','Price hit '+fmtPrice(o.price)+' but the BTC wasn\'t on the exchange.','neut',false);}
+      }
+    }
+  }
+  /* --- futures positions: funding, stops, liquidation --- */
+  if(S.positions.length&&S.price>0){
+    const tr=trendPrice(day);
+    for(let i=S.positions.length-1;i>=0;i--){
+      const P=S.positions[i];
+      const prem=tr>0&&S.price>tr?1:-1;          // longs pay funding in premium, earn in discount
+      P.margin-=P.margin0*P.lev*0.0003*prem*P.dir;
+      let closeAt=null,why='';
+      if(P.dir>0){ if(S.price<=P.liq){closeAt=P.liq;why='liq';} else if(P.stop&&S.price<=P.stop){closeAt=P.stop;why='stop';} }
+      else { if(S.price>=P.liq){closeAt=P.liq;why='liq';} else if(P.stop&&S.price>=P.stop){closeAt=P.stop;why='stop';} }
+      if(P.margin<=0&&!closeAt){closeAt=S.price;why='liq';}
+      if(closeAt!==null){
+        S.positions.splice(i,1);
+        if(why==='liq'){
+          S.perpPnl-=P.margin0;
+          logTrade('perp-liq','LIQUIDATED: '+(P.dir>0?'LONG':'SHORT')+' '+P.lev+'× @ '+fmtPrice(closeAt)+' (entry '+fmtPrice(P.entry)+')',-P.margin0);
+          queueAlert({kind:'red',head:'⚡ PERP LIQUIDATED',body:(P.dir>0?'LONG':'SHORT')+' '+P.lev+'× ('+fmtBTC(P.margin0*P.lev)+' notional) hit its liquidation price of '+fmtPrice(P.liq)+'. Your '+fmtBTC(P.margin0)+' margin is gone. Leverage giveth…',imp:'bear'});
+          pushNews(day,'Perp Liquidated',(P.dir>0?'Long':'Short')+' '+P.lev+'× wiped out at '+fmtPrice(closeAt)+'. Margin lost: '+fmtBTC(P.margin0)+'.','bear',true);
+        }else{
+          const pnl=Math.max(-P.margin,P.margin0*P.lev*(closeAt/P.entry-1)*P.dir);
+          S.exch+=Math.max(0,P.margin+pnl);
+          S.perpPnl+=pnl;
+          logTrade('perp-stop','STOP: '+(P.dir>0?'LONG':'SHORT')+' '+P.lev+'× closed @ '+fmtPrice(closeAt)+' (entry '+fmtPrice(P.entry)+')',pnl);
+          toast('⛔ Stop-Loss Triggered','Closed at '+fmtPrice(closeAt)+' · PnL '+fmtBTC(pnl));
+          pushNews(day,'Stop-Loss Executed','Perp closed at '+fmtPrice(closeAt)+' for '+fmtBTC(pnl)+' PnL.','neut',false);
+        }
+      }
+    }
+  }
+  /* --- power cost accrual --- */
+  const pcost=dailyPowerCost();
+  S.pendingPower+=pcost;
+  S.stats.rev=expectedDailyBTC()*S.price;
+  S.stats.cost=pcost;
+  /* --- degradation & failures --- */
+  const failMult=S.set.fail;
+  for(const r of S.rigs){
+    if(!r.online||r.broken)continue;
+    const farm=getFarm(r.farmId);
+    let cool=(r.kind==='gpu'?COOL_TIERS[r.cool].factor:1)*FARM_COOL[(farm&&farm.coolTier)||0].f;
+    let failBoost=1;
+    if(r.clk===1){ if(!hasCooling(r)){cool*=4;failBoost=3;} }      // OC without cooling cooks hardware
+    else if(r.clk===-1){cool*=0.7;failBoost=0.7;}                  // UC runs cool and gentle
+    r.cond=Math.max(0.05,r.cond-(0.0005+0.0009*failMult)*cool*(1+rng.next()*0.5));
+    if(failMult>0&&rng.chance(failMult*failBoost*(0.0002+(1-r.cond)*0.002))){
+      r.broken=true;   // silent — shows on the FAILED tag, REPAIR ALL badge and rigs-online counter
+    }
+  }
+  /* --- scheduled events --- */
+  while(S.evIdx<S.events.length&&S.events[S.evIdx].day<=day){
+    fireEvent(S.events[S.evIdx]);S.evIdx++;
+  }
+  /* --- recurring media FUD until ~2035 --- */
+  if(day>=S.nextFud&&day>MARKET_OPEN&&yearOf(day)<=2035){
+    const t=FUD_POOL[Math.floor(rng.next()*FUD_POOL.length)];
+    const F=FUD_FIGURES[Math.floor(rng.next()*FUD_FIGURES.length)];
+    if(t[0].includes('Obituary'))S.fudN++;
+    pushNews(day,t[0].replace('{N}',S.fudN),
+      t[1].replace('{F}',F.charAt(0).toUpperCase()+F.slice(1)).replace('{P}',S.price>0?fmtPrice(S.price):'$0').replace('{Y}',String(yearOf(day)+2)),
+      'bear',false);
+    S.nextFud=day+40+Math.floor(rng.next()*110);
+  }
+  /* --- random exchange hacks --- */
+  if(S.set.hackFreq>0){
+    if(!S.hackWarned&&day>=S.nextHack-7&&day<S.nextHack){
+      S.hackWarned=1;
+      pushNews(day,'Security Concerns at a Large Exchange','Anonymous researchers report anomalous outflows and disabled withdrawals. Probably nothing. Probably.','bear',true);
+      if(S.set.notifHack)queueAlert({kind:'red',head:'⚠ EXCHANGE SECURITY ALERT',body:'Researchers report anomalous outflows and stalled withdrawals at a major exchange. '+(S.exch>0?'You currently have '+fmtBTC(S.exch)+' AT RISK on the exchange. Withdraw to your wallet — now.':'You hold nothing on the exchange. Self-custody pays.'),imp:'bear'});
+    }
+    if(day>=S.nextHack){
+      const name=HACK_EXCHANGES[Math.floor(rng.next()*HACK_EXCHANGES.length)];
+      if(S.exch>0){
+        const lost=S.exch;S.exch=0;
+        pushNews(day,'💀 '+name+' Hacked — Customer Funds Gone','Attackers drained the hot wallets overnight. Your '+fmtBTC(lost)+' held on the exchange is gone forever.','bear',true);
+        queueAlert({kind:'red',head:'💀 '+name.toUpperCase()+' HACKED',body:'Attackers drained the hot wallets overnight. Your '+fmtBTC(lost)+' held on '+name+' is gone forever. Not your keys, not your coins.',imp:'bear'});
+        S.shock*=0.85;
+      }else{
+        pushNews(day,name+' Hacked','Hot wallets drained. You held nothing there — self-custody pays.','bear',true);
+        queueAlert({kind:'red',head:'💀 '+name.toUpperCase()+' HACKED',body:'Hot wallets drained, customer funds gone. Your exchange balance: ₿0.00000000. You held everything in self-custody — this one cost you nothing.',imp:'bear'});
+        S.shock*=0.92;
+      }
+      scheduleNextHack(day);
+    }
+  }
+  /* --- month rollover: bills & loans --- */
+  if(date.getUTCMonth()!==prevDate.getUTCMonth())processMonth();
+  /* --- year rollover: procedural events --- */
+  if(date.getUTCFullYear()!==prevDate.getUTCFullYear()){
+    const y=date.getUTCFullYear();
+    if(y>S.procYear){S.procYear=y;genYearEvents(y);}
+  }
+  S.stats.temp=computeTemp();
+  checkMilestones();
+}
+function fireEvent(ev){
+  pushNews(S.day,ev.head,ev.desc,ev.imp,true);
+  if(ev.maj==='pizza'){
+    queueAlert({kind:'pizza',head:'🍕 BITCOIN PIZZA DAY 🍕',body:'Laszlo Hanyecz just paid 10,000 BTC for two large pizzas. Ten. Thousand. Coins. Everyone on the forum agrees it\'s a fair deal — pizza is real, bitcoin is internet money. Remember this day every time you\'re about to spend your coins on something dumb.',imp:'neut'});
+  }else if(ev.maj&&!(ev.fx&&ev.fx.t==='hackS')){
+    queueAlert({kind:'news',head:ev.head,body:ev.desc,imp:ev.imp});
+  }else if(!ev.maj&&ev.imp!=='neut')toast(ev.imp==='bull'?'📈 '+ev.head:'📉 '+ev.head,ev.desc.slice(0,90)+'…');
+  const fx=ev.fx;if(!fx)return;
+  const unp=S.set.unpaired; // unpaired timeline: historical events are just news — they don't drive price/hashrate
+  if(fx.t==='shock'){if(!unp)S.shock*=fx.v;}
+  else if(fx.t==='hash'){if(!unp)S.hashMod*=fx.v;}
+  else if(fx.t==='hackS'){
+    if(!unp)S.shock*=fx.v;
+    let lostTxt='You held nothing on the exchange. Your wallet coins are untouched — self-custody pays.';
+    if(S.set.hackFreq>0&&S.exch>0){
+      const lost=S.exch*fx.loss;S.exch-=lost;
+      lostTxt='You lost '+fmtBTC(lost)+' held on the exchange. Coins in your self-custody wallet are untouched.';
+      pushNews(S.day,'Your Exchange Balance Was Hit',lostTxt,'bear',true);
+    }
+    queueAlert({kind:'red',head:'💀 '+ev.head.toUpperCase(),body:ev.desc+' '+lostTxt,imp:'bear'});
+  }
+}
+function genYearEvents(y){
+  const r=new RNG(S.set.seed^(y*2654435761));
+  // era-appropriate story pools: regulation -> hyperbitcoinization -> futuristic -> mature macro
+  const pool=y<2028?EV_TEMPLATES:
+             y<2032?EV_2028.concat(EV_FLAVOR):
+             y<2050?EV_2032.concat(EV_FLAVOR):
+             EV_2050.concat(EV_FLAVOR);
+  const n=3+Math.floor(r.next()*3);
+  for(let i=0;i<n;i++){
+    const t=pool[Math.floor(r.next()*pool.length)];
+    const place=EV_PLACES[Math.floor(r.next()*EV_PLACES.length)];
+    const d=dayOf(y+'-01-15')+Math.floor(r.next()*330);
+    S.events.push({day:d,head:t[0].replace('{C}',place),desc:t[1].replace('{C}',place),imp:t[2],fx:t[3]!==1?{t:'shock',v:t[3]}:null});
+  }
+  S.events.sort((a,b)=>a.day-b.day);
+  // re-find index: keep events not yet fired in order
+  S.evIdx=S.events.findIndex(e=>e.day>S.day-1);
+  if(S.evIdx<0)S.evIdx=S.events.length;
+}
+function computeTemp(){
+  let load=0,nf=0;
+  for(const f of S.farms){const w=farmWattsActive(f);if(w>0){load+=w/(f.capKW*1000);nf++;}}
+  if(nf===0)return 35;
+  return 36+48*(load/nf)+Math.sin(S.day*0.7)*1.5;
+}
+/* ============ MONTHLY: BILLS & LOANS ============ */
+function processMonth(){
+  const bill=S.pendingPower;S.pendingPower=0;
+  if(bill>0.005){
+    if(S.cash>=bill){
+      S.cash-=bill;
+    }else{
+      S.unpaidBill+=bill;
+      for(const r of S.rigs)r.online=false;
+      pushNews(S.day,'⚡ POWER CUT — Bill Unpaid','You couldn\'t cover the '+fmtUSD(bill)+' electricity bill. The utility cut the feed; every rig is dark until you pay arrears in the Bank tab.','bear',true);
+      toast('⚡ POWER CUT','Unpaid bill of '+fmtUSD(bill)+'. All rigs offline.');
+    }
+  }
+  for(let i=S.loans.length-1;i>=0;i--){
+    const L=S.loans[i];
+    const interest=L.bal*L.rate/12;
+    const pay=Math.min(L.pay,L.bal+interest);
+    if(S.cash>=pay){
+      S.cash-=pay;L.bal=L.bal+interest-pay;L.left--;
+      if(L.bal<=0.01){S.loans.splice(i,1);pushNews(S.day,'Loan Repaid','Final payment made. The bank wishes you continued volatility.','neut',false);toast('🏦 Loan Repaid','Debt cleared.');}
+    }else{
+      // default: seize hardware
+      let owed=L.bal+interest,recovered=0;
+      const sorted=S.rigs.slice().sort((a,b)=>rigResale(b)-rigResale(a));
+      for(const r of sorted){
+        if(recovered>=owed)break;
+        recovered+=rigResale(r);
+        S.rigs=S.rigs.filter(x=>x.id!==r.id);
+      }
+      S.loans.splice(i,1);
+      S.creditFreeze=S.day+365;
+      pushNews(S.day,'💀 LOAN DEFAULT — Hardware Seized','You missed a '+fmtUSD(pay)+' payment. Repo crews hauled away rigs worth '+fmtUSD(recovered)+'. Credit frozen for 12 months.','bear',true);
+      toast('💀 DEFAULT','Rigs seized. Credit frozen 12 months.');
+    }
+  }
+}
+/* ============ MAJOR ALERTS (auto-pause) ============ */
+function queueAlert(a){
+  if(skipping)return; // skip-to-date ignores all pause notifications (everything still lands in the news feed)
+  if(S.set&&S.set.notifMajor===false){ // master off: never block, never pause — downgrade to a toast
+    toast((a.kind==='red'?'🚨 ':a.kind==='pizza'?'🍕 ':'📰 ')+a.head,a.body.length>140?a.body.slice(0,140)+'…':a.body);
+    return;
+  }
+  S.alertQueue.push(a);
+}
+function showAlerts(){
+  const host=el('alerthost');if(!host)return;
+  const a=S.alertQueue[0];
+  if(!a){host.innerHTML='';return;}
+  if(a.kind==='genesis'){
+    host.innerHTML='<div class="alertwrap"><div class="alertbox genesis"><div class="abar">■ BLOCK 0 — THE GENESIS BLOCK ■ 03 JAN 2009 18:15:05 UTC</div><div class="abody genesisbody">'+
+     '<div class="gb-line">VER 01000000&nbsp;&nbsp;BITS 1d00ffff&nbsp;&nbsp;NONCE 2083236893&nbsp;&nbsp;DIFFICULTY 1.00&nbsp;&nbsp;REWARD 50 BTC (unspendable by design)</div>'+
+     '<div class="gb-line">HASH&nbsp;&nbsp; 000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f</div>'+
+     '<div class="gb-line">MERKLE 4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b</div>'+
+     '<div class="gb-coinbase">COINBASE&gt; "The Times 03/Jan/2009<br>Chancellor on brink of second bailout for banks"</div>'+
+     '<div class="gb-wp">"A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution."<br>— bitcoin: A Peer-to-Peer Electronic Cash System, Satoshi Nakamoto, Oct 31 2008</div>'+
+     '<div class="gb-wp" style="color:#67d98f">The headline carved into block zero is both timestamp and thesis. Sixteen years of bailouts later, it still compiles.</div>'+
+     '<div class="row" style="margin-top:14px"><span class="tag bull">▲ THE BEGINNING</span><button class="on" style="margin-left:auto" onclick="A.dismissAlert()">BEGIN MINING</button></div>'+
+     '</div></div></div>';
+    return;
+  }
+  const cls=a.kind==='red'?' red':a.kind==='pizza'?' pizza':'';
+  const bar=a.kind==='red'?'■ CRITICAL ALERT ■':a.kind==='pizza'?'■ SPECIAL BULLETIN ■':'■ BREAKING NEWS ■';
+  const tag=a.imp==='bull'?'<span class="tag bull">▲ BULLISH</span>':a.imp==='bear'?'<span class="tag bear">▼ BEARISH</span>':'<span class="tag neut">— MARKET NEUTRAL</span>';
+  host.innerHTML='<div class="alertwrap"><div class="alertbox'+cls+'">'+
+   '<div class="abar">'+bar+' '+fmtDate(S.day)+'</div><div class="abody">'+
+   (a.kind==='pizza'?'<div class="bigpizza">🍕🍕</div>':'')+
+   '<h2>'+a.head+'</h2><div class="adesc">'+a.body+'</div>'+
+   '<div class="row" style="margin-top:14px">'+tag+
+   '<button class="on" style="margin-left:auto" onclick="A.dismissAlert()">ACKNOWLEDGE'+(S.alertQueue.length>1?' ('+(S.alertQueue.length-1)+' more)':'')+'</button>'+
+   '</div></div></div></div>';
+}
+window.A=window.A||{};
+/* ============ TIME CONTROL ============ */
+let busy=false,abortRun=false,skipping=false;
+function runSteps(n,done){
+  if(busy||!S)return;
+  if(S.alertQueue.length){showAlerts();return;}     // can't advance past an unacknowledged alert
+  busy=true;abortRun=false;
+  const chunk=()=>{
+    let k=Math.min(n,skipping?120:10);
+    while(k-->0&&n>0){
+      stepDay();n--;
+      if(S.alertQueue.length&&!skipping){n=0;break;} // major event: stop time mid-batch (unless skipping)
+    }
+    if(n>0&&!abortRun)setTimeout(chunk,0);
+    else{
+      busy=false;
+      if(S.alertQueue.length)S.speed='pause';        // auto-pause on major events
+      if(batch.blocks>0){
+        if(S.set.notifBlocks)toast('⛏ '+batch.blocks+' Block'+(batch.blocks>1?'s':'')+' Found','+'+fmtBTC(batch.btc)+' to your wallet');
+        batch.blocks=0;batch.btc=0;
+      }
+      saveGame();render();flushToasts();showAlerts();
+      if(done)done();
+    }
+  };
+  chunk();
+}
+const SPEED_DAYS={day:1,week:7,month:30};
+function tickAuto(){
+  if(!S||S.speed==='pause'||busy)return;
+  runSteps(SPEED_DAYS[S.speed]||1);
+}
+/* ============ ACTIONS ============ */
+const A=window.A;
+A.step=n=>runSteps(n);
+A.setSpeed=sp=>{
+  S.speed=sp;
+  if(sp==='pause')abortRun=true;   // first press halts immediately, even mid-batch
+  renderTimebar();
+};
+A.dismissAlert=function(){
+  S.alertQueue.shift();
+  saveGame();showAlerts();
+  if(!S.alertQueue.length)render();
+};
+A.showGenesis=function(){
+  S.alertQueue.unshift({kind:'genesis',head:'THE GENESIS BLOCK',body:'The Times 03/Jan/2009 — Chancellor on brink of second bailout for banks.',imp:'neut'});
+  A.closeModal();showAlerts();
+};
+A.skipTo=function(){
+  if(busy)return err('Time is already advancing — pause first.');
+  const v=el('skipdate')?el('skipdate').value:null;
+  if(!v)return err('Pick a target date first.');
+  const target=Math.round((Date.parse(v+'T00:00:00Z')-EPOCH)/864e5);
+  if(!isFinite(target)||target<=S.day)return err('Pick a date after '+fmtDate(S.day)+'.');
+  const n=Math.min(target-S.day,365*250);
+  S.speed='pause';renderTimebar();
+  S.alertQueue.length=0;          // skip dismisses anything pending — it's all in the news feed
+  if(el('alerthost'))el('alerthost').innerHTML='';
+  skipping=true;
+  runSteps(n,()=>{skipping=false;toast('⤳ Arrived','Skipped to '+fmtDate(S.day)+'. Major events from the journey are in the News tab.');flushToasts();});
+  if(!busy)skipping=false;
+};
+A.tab=t=>{S.tab=t;render();};
+function err(msg){toast('✖ Can\'t Do That',msg);flushToasts();}
+function getFarm(id){return S.farms.find(f=>f.id===+id);}
+function shopFarm(){return getFarm(S.ui_shopFarm||S.farms[0].id)||S.farms[0];}
+A.setShopFarm=v=>{S.ui_shopFarm=+v;};
+function capCheck(f,extraW){
+  if(farmRigs(f.id).length>=f.slots)return 'No free rack slots at '+f.name+'.';
+  if(farmWattsInstalled(f)+extraW>f.capKW*1000)return f.name+' lacks power capacity ('+fmtWatts(f.capKW*1000)+' max). Upgrade it or pick another site.';
+  return null;
+}
+function shopQty(){const q=Math.floor(+(S.ui_qty||1));return clamp(isFinite(q)&&q>0?q:1,1,99999);}
+function bulkCap(f,unitWatts,unitPrice,want){
+  const slotsFree=f.slots-farmRigs(f.id).length;
+  const powFree=f.capKW*1000-farmWattsInstalled(f);
+  return Math.min(want,slotsFree,Math.floor(powFree/Math.max(1,unitWatts)),Math.floor(S.cash/unitPrice));
+}
+A.buyUnit=function(modelId){
+  const m=findModel(modelId);if(!m)return;
+  const f=shopFarm(),want=shopQty();
+  const n=bulkCap(f,m.watts,m.price,want);
+  if(n<1){
+    if(f.slots-farmRigs(f.id).length<1)return err('No free rack slots at '+f.name+'.');
+    if(f.capKW*1000-farmWattsInstalled(f)<m.watts)return err(f.name+' lacks power capacity ('+fmtWatts(f.capKW*1000)+' max). Upgrade it or pick another site.');
+    return err('Need '+fmtUSD(m.price)+' cash.');
+  }
+  const total=n*m.price;
+  if(!confirm('Buy '+n+' × '+m.name+' for '+fmtUSD(total)+' total at '+f.name+'?'+(n<want?'\n(Capped from '+want+' by slots / power / cash.)':'')))return;
+  const kind=CPUS.includes(m)?'cpu':'asic';
+  for(let i=0;i<n;i++)S.rigs.push({id:S.nextId++,kind,model:m.id,farmId:f.id,cond:1,online:false,conn:false,broken:false,clk:0,bought:S.day,invested:m.price});
+  S.cash-=total;
+  if(kind==='asic')milestone('asic1','First ASIC','Purpose-built silicon. No more games.');
+  toast('🛒 Purchased',n+' × '+m.name+' racked at '+f.name+'. Power on (⏻) and link (⇅) in the Rigs tab — or use the farm\'s bulk buttons.');
+  saveGame();render();flushToasts();
+};
+A.buyGpuRig=function(){
+  const f=shopFarm(),want=shopQty();
+  const n=bulkCap(f,60,GPU_FRAME_PRICE,want);
+  if(n<1){
+    const c=capCheck(f,60);if(c)return err(c);
+    return err('Need '+fmtUSD(GPU_FRAME_PRICE)+' cash.');
+  }
+  if(!confirm('Build '+n+' × GPU rig frame for '+fmtUSD(n*GPU_FRAME_PRICE)+' total at '+f.name+'?'))return;
+  for(let i=0;i<n;i++)S.rigs.push({id:S.nextId++,kind:'gpu',model:'gpurig',farmId:f.id,cond:1,online:false,conn:false,broken:false,clk:0,bought:S.day,invested:GPU_FRAME_PRICE,cards:[],psu:0,cool:0});
+  S.cash-=n*GPU_FRAME_PRICE;
+  milestone('gpu1','First GPU Rig','An open frame, a PSU, and ambition.');
+  toast('🛒 Frames Built',n+' empty GPU rig'+(n>1?'s':'')+' at '+f.name+'. Add cards, then power on and link.');
+  saveGame();render();flushToasts();
+};
+function setRigClk(r,mode){ // returns false if OC blocked by farm capacity
+  const prev=r.clk||0;
+  r.clk=mode;
+  if(mode===1){
+    const farm=getFarm(r.farmId);
+    if(farmWattsInstalled(farm)>farm.capKW*1000){r.clk=prev;return false;}
+  }
+  return true;
+}
+A.cycleClk=function(rigId){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r||r.broken)return;
+  const next=(r.clk||0)===0?1:r.clk===1?-1:0;   // STD -> OC -> UC -> STD
+  if(!setRigClk(r,next))return err('Overclocking would exceed the farm\'s power capacity.');
+  if(next===1)toast(hasCooling(r)?'⚡ Overclocked':'🔥 OC — NO COOLING','Rig #'+r.id+(hasCooling(r)?': +hashrate, +power, cooled and safe.':': +hashrate but ~4× wear and triple failures. Add cooling!'));
+  else if(next===-1)toast('🐢 Underclocked','Rig #'+r.id+': −15% hashrate, −30% power, −30% wear. Efficiency mode.');
+  saveGame();render();flushToasts();
+};
+A.clkAll=function(fid,mode){
+  let n=0,blocked=0;
+  for(const r of farmRigs(fid)){
+    if(r.broken)continue;
+    if(setRigClk(r,mode))n++;else blocked++;
+  }
+  const lab=mode===1?'🔥 Overclocked':mode===-1?'🐢 Underclocked':'— Stock clocks';
+  toast(lab,n+' rig'+(n===1?'':'s')+' set'+(blocked?' · '+blocked+' blocked by power capacity':'')+(mode===1?'. Uncooled rigs will wear fast!':''));
+  saveGame();render();flushToasts();
+};
+A.powerAll=function(fid){
+  let n=0;for(const r of farmRigs(fid))if(!r.broken&&!r.online){r.online=true;n++;}
+  if(n)toast('⏻ Power On All',n+' rig'+(n>1?'s':'')+' brought online.');
+  saveGame();render();flushToasts();
+};
+A.linkAll=function(fid){
+  let n=0;for(const r of farmRigs(fid))if(!r.broken&&!r.conn){r.conn=true;n++;}
+  const f=getFarm(fid),m=f?farmMode(f):'solo';
+  const dest=m==='solo'?'the network (solo)':m==='eth'?'the ETH pool':m==='ai'?'the AI compute marketplace':(POOLS.find(p=>p.id===m)||{name:m}).name;
+  if(n)toast('⇅ Link All',n+' rig'+(n>1?'s':'')+' connected to '+dest+'.');
+  saveGame();render();flushToasts();
+};
+A.repairAll=function(fid){
+  const broken=farmRigs(fid).filter(r=>r.broken);
+  if(!broken.length)return err('Nothing to repair at this site.');
+  const total=broken.reduce((s,r)=>s+Math.max(10,Math.round(rigInvested(r)*0.12)),0);
+  if(S.cash<total)return err('Repairing '+broken.length+' rigs costs '+fmtUSD(total)+'.');
+  if(!confirm('Repair '+broken.length+' rig'+(broken.length>1?'s':'')+' for '+fmtUSD(total)+'?'))return;
+  for(const r of broken){S.cash-=Math.max(10,Math.round(rigInvested(r)*0.12));r.broken=false;r.cond=Math.min(0.95,r.cond+0.35);}
+  toast('🔧 Repair All',broken.length+' rigs back in service for '+fmtUSD(total)+'.');
+  saveGame();render();flushToasts();
+};
+function bulkSellMatches(){
+  const type=S.ui_bs_type||'all', model=S.ui_bs_model||'all', cond=clamp(+(S.ui_bs_cond??100),0,100)/100;
+  return S.rigs.filter(r=>(type==='all'||r.kind===type)&&(model==='all'||r.model===model)&&r.cond<=cond+1e-9);
+}
+A.bulkSell=function(){
+  const m=bulkSellMatches();
+  if(!m.length)return err('No rigs match the filter.');
+  const total=m.reduce((s,r)=>s+rigResale(r),0);
+  if(!confirm('Sell '+m.length+' rig'+(m.length>1?'s':'')+' for '+fmtUSD(total)+' total?'))return;
+  const ids=new Set(m.map(r=>r.id));
+  S.cash+=total;S.rigs=S.rigs.filter(r=>!ids.has(r.id));
+  toast('💰 Bulk Sale',m.length+' rigs sold for '+fmtUSD(total)+'.');
+  saveGame();render();flushToasts();
+};
+A.coolFarm=function(fid){
+  const f=getFarm(fid);if(!f||f.coolTier>=FARM_COOL.length-1)return;
+  const cost=farmCoolCost(f);
+  if(S.cash<cost)return err('Cooling upgrade costs '+fmtUSD(cost)+'.');
+  S.cash-=cost;f.coolTier++;
+  toast('❄ '+FARM_COOL[f.coolTier].name,f.name+' now runs cooler — slower wear, safe overclocking.');
+  saveGame();render();flushToasts();
+};
+A.setFarmMode=function(fid,mode){
+  const f=getFarm(fid);if(!f)return;
+  f.mode=mode==='solo'?'solo':mode;
+  if(mode==='eth'){
+    if(S.day>=MERGE_DAY)toast('⚠ ETH Mining Is Dead','The Merge ended GPU mining on Ethereum. This farm will earn nothing — try AI COMPUTE.');
+    else toast('⛏ '+f.name+' → ETH Pool','GPU rigs mine Ethereum, paid out in BTC (2% fee). CPUs and ASICs here earn nothing.');
+  }else if(mode==='ai')toast('🤖 '+f.name+' → AI Compute (BTC)','GPU rigs rent out compute for AI training, paid in BTC (2% fee). Modern cards earn the most.');
+  else if(mode==='aiusd')toast('🤖 '+f.name+' → AI Compute (USD)','GPU rigs rent out compute for AI training, paid in dollars straight to your bank (1% fee).');
+  else if(mode==='solo')toast('⛏ '+f.name+' → Solo','Full block rewards, full variance.');
+  else{const p=POOLS.find(x=>x.id===mode);if(p)toast('⛏ '+f.name+' → '+p.name,'Steady payouts, '+(p.fee*100).toFixed(1)+'% fee.');}
+  saveGame();render();flushToasts();
+};
+A.placeLimit=function(){
+  const side=S.ui_lo_side||'buy';
+  const price=+(el('loprice')?el('loprice').value:0), qty=+(el('loqty')?el('loqty').value:0);
+  if(!(price>0)||!(qty>0))return err('Enter a target price and BTC quantity.');
+  if(side==='buy'&&S.cash<price*qty)return err('That buy order needs '+fmtUSD(price*qty)+' cash at fill time — you don\'t have it now.');
+  if(side==='sell'&&S.exch<qty)return err('You only have '+fmtBTC(S.exch)+' on the exchange.');
+  S.limitOrders.push({side,price,qty});
+  toast('📋 Limit Order Placed',side.toUpperCase()+' '+fmtBTCs(qty)+' @ '+fmtPrice(price));
+  saveGame();render();flushToasts();
+};
+A.cancelLimit=function(i){S.limitOrders.splice(i,1);saveGame();render();};
+A.openPos=function(){
+  if(!S.futuresOn)return;
+  const dir=S.ui_fdir==='short'?-1:1;
+  const margin=+(el('fmargin')?el('fmargin').value:0);   // BTC collateral
+  const lev=+(el('flev')?el('flev').value:10);
+  const stop=+(el('fstop')?el('fstop').value:0)||null;
+  if(!(margin>=0.001))return err('Minimum margin is ₿0.00100000.');
+  if(margin>S.exch+1e-12)return err('Margin is posted from your EXCHANGE balance only — you have '+fmtBTC(S.exch)+' there. Deposit BTC from your wallet first.');
+  const stopPct=stop; // input is % of margin to risk
+  if(stopPct&&(stopPct<1||stopPct>=95))return err('Stop-loss must be between 1 and 94 (% of margin lost).');
+  const entry=S.price*(1+0.0005*dir);
+  const liq=dir>0?entry*(1-0.95/lev):entry*(1+0.95/lev);
+  // a X% margin loss at L× leverage = X/L % adverse price move
+  const stopPrice=stopPct?(dir>0?entry*(1-stopPct/100/lev):entry*(1+stopPct/100/lev)):null;
+  S.exch-=margin;
+  S.positions.push({id:S.nextPosId++,dir,lev,margin,margin0:margin,entry,liq,stop:stopPrice,stopPct:stopPct||null,opened:S.day,btc:1});
+  logTrade('perp-open','OPEN '+(dir>0?'LONG':'SHORT')+' '+lev+'× · margin '+fmtBTC(margin)+' · entry '+fmtPrice(entry)+(stopPct?' · stop −'+stopPct+'%':''));
+  toast('📈 Perp Opened',(dir>0?'LONG':'SHORT')+' '+lev+'× · '+fmtBTC(margin*lev)+' notional · liq at '+fmtPrice(liq)+(stopPrice?' · stop '+fmtPrice(stopPrice):''));
+  saveGame();render();flushToasts();
+};
+A.closePos=function(id){
+  const i=S.positions.findIndex(p=>p.id===id);if(i<0)return;
+  const P=S.positions[i];
+  const pnl=Math.max(-P.margin,P.margin0*P.lev*(S.price/P.entry-1)*P.dir);
+  S.exch+=Math.max(0,P.margin+pnl);
+  S.perpPnl+=pnl;
+  S.positions.splice(i,1);
+  logTrade('perp-close','CLOSE '+(P.dir>0?'LONG':'SHORT')+' '+P.lev+'× @ '+fmtPrice(S.price)+' (entry '+fmtPrice(P.entry)+')',pnl);
+  toast('✓ Perp Closed','Realized PnL: '+fmtBTC(pnl)+(S.price>0?' ('+fmtUSD(pnl*S.price)+')':''));
+  saveGame();render();flushToasts();
+};
+A.addCard=function(rigId){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r)return;
+  const sel=el('cardsel-'+rigId);if(!sel||!sel.value)return;
+  const m=findModel(sel.value);
+  if(r.cards.length>=PSU_TIERS[r.psu].cards)return err('PSU maxed at '+PSU_TIERS[r.psu].cards+' cards. Upgrade the PSU.');
+  if(S.cash<m.price)return err('Need '+fmtUSD(m.price)+'.');
+  const f=getFarm(r.farmId);
+  if(farmWattsInstalled(f)+m.watts>f.capKW*1000)return err('Farm power capacity exceeded.');
+  r.cards.push(m.id);r.invested+=m.price;S.cash-=m.price;
+  S.ui_lastCard=m.id;   // remember the choice so the next add defaults to it
+  toast('🔩 Card Installed',m.name+' added to rig #'+r.id);
+  saveGame();render();flushToasts();
+};
+function cardValue(r,cid){
+  const m=findModel(cid);if(!m)return 0;
+  const age=(S.day-r.bought)/365.25;
+  return Math.max(2,Math.round(m.price*0.55*r.cond*Math.pow(0.85,age)));
+}
+A.sellCard=function(rigId,cid){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r||r.kind!=='gpu')return;
+  const idx=r.cards.indexOf(cid);if(idx<0)return;
+  const m=findModel(cid),v=cardValue(r,cid);
+  if(!confirm('Pull one '+m.name+' from rig #'+r.id+' and sell it for '+fmtUSD(v)+'?'))return;
+  r.cards.splice(idx,1);
+  r.invested=Math.max(GPU_FRAME_PRICE,r.invested-m.price);
+  S.cash+=v;
+  toast('🔧 Card Sold',m.name+' pulled and sold for '+fmtUSD(v));
+  saveGame();render();flushToasts();
+};
+A.upgradePsu=function(rigId){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r||r.psu>=PSU_TIERS.length-1)return;
+  const t=PSU_TIERS[r.psu+1];
+  if(S.cash<t.price)return err('Need '+fmtUSD(t.price)+'.');
+  S.cash-=t.price;r.psu++;r.invested+=t.price;
+  toast('🔌 PSU Upgraded',t.name+' — rig now holds '+t.cards+' cards');
+  saveGame();render();flushToasts();
+};
+A.upgradeCool=function(rigId){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r||r.cool>=COOL_TIERS.length-1)return;
+  const t=COOL_TIERS[r.cool+1];
+  if(S.cash<t.price)return err('Need '+fmtUSD(t.price)+'.');
+  S.cash-=t.price;r.cool++;r.invested+=t.price;
+  toast('❄ Cooling Upgraded',t.name+' — slower wear on this rig');
+  saveGame();render();flushToasts();
+};
+A.toggleRig=function(rigId){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r||r.broken)return;
+  r.online=!r.online;saveGame();render();
+};
+A.toggleConn=function(rigId){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r||r.broken)return;
+  r.conn=!r.conn;
+  if(r.conn&&!r.online)toast('⚠ No Power','Rig #'+r.id+' is linked but switched off. Flip the power (⏻) to start hashing.');
+  saveGame();render();flushToasts();
+};
+A.repairRig=function(rigId){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r)return;
+  const cost=Math.max(10,Math.round(rigInvested(r)*0.12));
+  if(S.cash<cost)return err('Repair costs '+fmtUSD(cost)+'.');
+  S.cash-=cost;r.broken=false;r.cond=Math.min(0.95,r.cond+0.35);
+  toast('🔧 Repaired',rigName(r)+' back online');
+  saveGame();render();flushToasts();
+};
+A.sellRig=function(rigId){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r)return;
+  const v=rigResale(r);
+  if(!confirm('Sell '+rigName(r)+' for '+fmtUSD(v)+'?'))return;
+  S.cash+=v;S.rigs=S.rigs.filter(x=>x.id!==rigId);
+  saveGame();render();
+};
+A.scrapRig=function(rigId){
+  const r=S.rigs.find(x=>x.id===rigId);if(!r)return;
+  const v=Math.round(rigInvested(r)*0.05);
+  if(!confirm('Scrap '+rigName(r)+' for '+fmtUSD(v)+' salvage?'))return;
+  S.cash+=v;S.rigs=S.rigs.filter(x=>x.id!==rigId);
+  saveGame();render();
+};
+A.buyFarm=function(typeId){
+  const t=FARM_TYPES.find(x=>x.id===typeId);if(!t)return;
+  if(S.cash<t.cost)return err('Need '+fmtUSD(t.cost)+'.');
+  S.cash-=t.cost;
+  S.farms.push({id:S.nextId++,typeId:t.id,name:t.name,capKW:t.capKW,rate:t.rate,slots:t.slots,upg:0,bought:S.day,coolTier:0,mode:'solo'});
+  milestone('farm1','Property Mogul','You bought your first dedicated mining site.');
+  toast('🏭 Site Acquired',t.name+' is ready for racks');
+  saveGame();render();flushToasts();
+};
+A.upgradeFarm=function(farmId){
+  const f=getFarm(farmId);if(!f)return;
+  const t=FARM_TYPES.find(x=>x.id===f.typeId);
+  const cost=Math.max(2000,Math.round(t.cost*0.25*Math.pow(1.4,f.upg)));
+  if(S.cash<cost)return err('Upgrade costs '+fmtUSD(cost)+'.');
+  S.cash-=cost;f.upg++;f.capKW=Math.round(f.capKW*1.5);f.slots=Math.round(f.slots*1.25);
+  toast('⚡ Capacity Upgraded',f.name+' now '+fmtWatts(f.capKW*1000)+' / '+f.slots+' slots');
+  saveGame();render();flushToasts();
+};
+A.sellFarm=function(farmId){
+  const f=getFarm(farmId);if(!f)return;
+  if(S.farms.length<=1)return err('You need at least one site.');
+  if(farmRigs(f.id).length>0)return err('Move or sell the rigs there first.');
+  const t=FARM_TYPES.find(x=>x.id===f.typeId);
+  const v=farmValue(f), gain=v-t.cost;
+  if(!confirm('SELL '+f.name+'?\n\nOriginal cost: '+fmtUSD(t.cost)+'\nCurrent value: '+fmtUSD(v)+' ('+((S.day-(f.bought||0))/365.25).toFixed(1)+' yrs held)\nNet '+(gain>=0?'gain':'loss')+': '+fmtUSD(gain)+'\n\nProceeds go to your bank account.'))return;
+  S.cash+=v;S.farms=S.farms.filter(x=>x.id!==f.id);
+  pushNews(S.day,'Property Sold',f.name+' sold for '+fmtUSD(v)+' ('+(gain>=0?'+':'')+fmtUSD(gain)+' vs purchase).','neut',false);
+  saveGame();render();
+};
+/* --- exchange --- */
+const SPREAD=0.005;
+A.setUI=function(k,v){S['ui_'+k]=v;};
+A.prevTrade=function(){
+  const b=el('buyamt'),s=el('sellamt');
+  if(b&&el('buyprev')){
+    const u=parseFloat(b.value);
+    el('buyprev').innerHTML=(u>0&&S.price>0)?('→ You pay <b>'+fmtUSD(u)+'</b> and receive <b class="amber">'+fmtBTC(u/(S.price*(1+SPREAD)))+'</b> at '+fmtPrice(S.price*(1+SPREAD))+'/BTC (incl. spread)'):'';
+  }
+  if(s&&el('sellprev')){
+    const q=parseFloat(s.value);
+    el('sellprev').innerHTML=(q>0&&S.price>0)?('→ You sell <b class="amber">'+fmtBTC(q)+'</b> and receive <b>'+fmtUSD(q*S.price*(1-SPREAD))+'</b> at '+fmtPrice(S.price*(1-SPREAD))+'/BTC (incl. spread)'):'';
+  }
+};
+A.buyBTC=function(){
+  const usd=parseFloat(el('buyamt').value);
+  if(!(usd>0))return err('Enter a USD amount.');
+  if(usd>S.cash)return err('Not enough cash.');
+  if(S.price<=0)return err('No market yet.');
+  const rate=S.price*(1+SPREAD), btc=usd/rate;
+  if(!confirm('CONFIRM BUY\n\nYou pay:      '+fmtUSD(usd)+'\nYou receive:  '+fmtBTC(btc)+'\nEffective rate: '+fmtPrice(rate)+'/BTC (market '+fmtPrice(S.price)+' + 0.5% spread)\n\nCoins land on the exchange.'))return;
+  S.cash-=usd;S.exch+=btc;S.spotBuyUsd+=usd;
+  logTrade('buy','BUY '+fmtBTC(btc)+' @ '+fmtPrice(rate)+' — paid '+fmtUSD(usd));
+  toast('💱 Bought',fmtBTC(btc)+' for '+fmtUSD(usd)+' (on exchange)');
+  saveGame();render();flushToasts();
+};
+A.sellBTC=function(){
+  const btc=parseFloat(el('sellamt').value);
+  if(!(btc>0))return err('Enter a BTC amount.');
+  if(btc>S.exch+1e-12)return err('Not enough BTC on the exchange. Transfer from wallet first.');
+  if(S.price<=0)return err('No market yet.');
+  const rate=S.price*(1-SPREAD), usd=btc*rate;
+  if(!confirm('CONFIRM SELL\n\nYou sell:     '+fmtBTC(btc)+'\nYou receive:  '+fmtUSD(usd)+'\nEffective rate: '+fmtPrice(rate)+'/BTC (market '+fmtPrice(S.price)+' − 0.5% spread)'))return;
+  S.exch-=btc;S.cash+=usd;S.btcSoldTotal+=btc;S.spotSellUsd+=usd;
+  logTrade('sell','SELL '+fmtBTC(btc)+' @ '+fmtPrice(rate)+' — received '+fmtUSD(usd));
+  milestone('sale1','First Sale','You converted mined coins into hard cash.');
+  toast('💱 Sold',fmtBTC(btc)+' for '+fmtUSD(usd));
+  saveGame();render();flushToasts();
+};
+A.maxBuy=()=>{el('buyamt').value=Math.floor(S.cash*100)/100;A.setUI('buyamt',el('buyamt').value);A.prevTrade();};
+A.maxSell=()=>{el('sellamt').value=(Math.floor(S.exch*1e8)/1e8).toFixed(8);A.setUI('sellamt',el('sellamt').value);A.prevTrade();}; // floor, never round up past balance
+function xferFee(){if(yearFrac(S.day)<=2011)return 0;return Math.min(0.01,Math.max(1,(S.feeRate||5))*140/1e8);} // ~140 vB transfer at the going sat/vB rate
+A.toExchange=function(){
+  const v=parseFloat(el('xferamt').value);
+  if(!(v>0))return err('Enter a BTC amount.');
+  if(v>S.wallet+1e-12)return err('Not enough in wallet.');
+  S.wallet-=v;S.exch+=Math.max(0,v-xferFee());
+  toast('→ Deposited',fmtBTC(v)+' moved to exchange'+(xferFee()?' (fee '+fmtBTC(xferFee())+')':''));
+  saveGame();render();flushToasts();
+};
+A.toWallet=function(){
+  const v=parseFloat(el('xferamt').value);
+  if(!(v>0))return err('Enter a BTC amount.');
+  if(v>S.exch+1e-12)return err('Not enough on exchange.');
+  S.exch-=v;S.wallet+=Math.max(0,v-xferFee());
+  toast('← Withdrawn',fmtBTC(v)+' safe in self-custody');
+  saveGame();render();flushToasts();
+};
+A.maxXfer=function(dir){const v=dir==='w'?S.exch:S.wallet;el('xferamt').value=(Math.floor(v*1e8)/1e8).toFixed(8);};
+/* --- bank --- */
+function loanAPR(){const y=yearFrac(S.day);return y<2014?0.12:y<2020?0.09:0.06;}
+function creditLimit(){return Math.max(2000,Math.round(netWorth()*0.4));}
+A.takeLoan=function(){
+  if(!S.set.loansOn)return err('Loans disabled in settings.');
+  if(S.day<S.creditFreeze)return err('Credit frozen until '+fmtDate(S.creditFreeze)+'.');
+  const amt=parseFloat(el('loanamt').value);
+  const months=+el('loanterm').value;
+  if(!(amt>0))return err('Enter an amount.');
+  if(amt>creditLimit())return err('Credit limit is '+fmtUSD(creditLimit())+'.');
+  const r=loanAPR()/12;
+  const pay=amt*r/(1-Math.pow(1+r,-months));
+  S.loans.push({bal:amt,rate:loanAPR(),pay,left:months});
+  S.cash+=amt;
+  pushNews(S.day,'Loan Originated',fmtUSD(amt)+' at '+(loanAPR()*100).toFixed(0)+'% APR over '+months+' months. Payment: '+fmtUSD(pay)+'/mo. Don\'t miss one.','neut',false);
+  toast('🏦 Loan Funded',fmtUSD(amt)+' — '+fmtUSD(pay)+'/mo for '+months+' months');
+  saveGame();render();flushToasts();
+};
+A.payLoan=function(i){
+  const L=S.loans[i];if(!L)return;
+  if(S.cash<L.bal)return err('Paying this off costs '+fmtUSD(L.bal)+'.');
+  if(!confirm('Pay off this loan early?\n\nRemaining balance: '+fmtUSD(L.bal)+'\n(You skip all future interest — about '+fmtUSD(Math.max(0,L.pay*L.left-L.bal))+' saved.)'))return;
+  S.cash-=L.bal;S.loans.splice(i,1);
+  pushNews(S.day,'Loan Settled Early','Remaining balance of '+fmtUSD(L.bal)+' paid in full. The bank is disappointed in your fiscal responsibility.','neut',false);
+  toast('🏦 Loan Paid Off',fmtUSD(L.bal)+' settled — debt-free on this one.');
+  saveGame();render();flushToasts();
+};
+A.payBill=function(){
+  if(S.unpaidBill<=0)return;
+  if(S.cash<S.unpaidBill)return err('Need '+fmtUSD(S.unpaidBill)+' to restore power.');
+  S.cash-=S.unpaidBill;S.unpaidBill=0;
+  toast('⚡ Power Restored','Arrears paid. Flip your rigs back on in the Rigs tab.');
+  saveGame();render();flushToasts();
+};
+/* ============ SAVE / LOAD ============ */
+const SAVE_KEY='btc_tycoon_v1';
+function saveGame(){
+  if(!S)return;
+  S.rngS=rng.s;
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}
+}
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return false;
+    const s=JSON.parse(raw);
+    if(!s||s.v!==1)return false;
+    S=s;rng=new RNG(1);rng.s=S.rngS|0;
+    for(const r of S.rigs){if(r.conn===undefined)r.conn=r.online;if(r.clk===undefined)r.clk=r.oc?1:0;delete r.oc;}
+    if(S.feeRate===undefined){S.feeRate=1;S.volEMA=0;}
+    if(S.nextFud===undefined){S.nextFud=S.day+60;S.fudN=0;}
+    if(S.set.unpaired===undefined)S.set.unpaired=false;
+    for(const f of S.farms){if(f.bought===undefined)f.bought=0;if(f.coolTier===undefined)f.coolTier=0;}
+    if(S.pool===undefined)S.pool=null;
+    for(const f of S.farms)if(f.mode===undefined)f.mode=S.pool||'solo'; // old global pool -> per-farm
+    if(!S.limitOrders)S.limitOrders=[];
+    if(!S.positions)S.positions=[];
+    if(S.futuresOn===undefined)S.futuresOn=S.day>=dayOf('2017-12-10');
+    if(!S.nextPosId)S.nextPosId=1;
+    if(!S.alertQueue)S.alertQueue=[];
+    if(S.lastBlockDay===undefined)S.lastBlockDay=null;
+    if(!S.priceMil)S.priceMil={};
+    if(S.lastCrash===undefined)S.lastCrash=-999;
+    if(!S.poolEarned)S.poolEarned=0;
+    for(const ev of S.events)if(ev.maj===undefined)ev.maj=0;
+    if(S.tab==='fut')S.tab='exch';
+    // legacy USD-margined futures positions: refund margin to cash, BTC perps only now
+    if(S.positions.length&&!S.positions[0].btc){for(const P of S.positions)S.cash+=P.margin;S.positions=[];}
+    if(!S.tradeLog)S.tradeLog=[];
+    if(S.perpPnl===undefined)S.perpPnl=0;
+    if(S.spotBuyUsd===undefined){S.spotBuyUsd=0;S.spotSellUsd=0;}
+    for(const k of ['notifMajor','notifHack','notifHw','notifBlocks','notifMile'])if(S.set[k]===undefined)S.set[k]=true;
+    extendAsics(S.day);
+    if(!S.seenHw)S.seenHw=[].concat(CPUS,GPUS,ASICS).filter(m=>m.from<=S.day).map(m=>m.id);
+    return true;
+  }catch(e){return false;}
+}
+A.exportSave=function(){
+  saveGame();
+  const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='btc-tycoon-save-'+fmtDate(S.day).replace(/[ ,]+/g,'-')+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+};
+A.importSave=function(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const s=JSON.parse(rd.result);
+      if(!s||s.v!==1||typeof s.day!=='number')throw 0;
+      S=s;rng=new RNG(1);rng.s=S.rngS|0;
+      extendAsics(S.day);
+      saveGame();A.closeModal();render();
+      toast('💾 Save Imported','Welcome back to '+fmtDate(S.day));flushToasts();
+    }catch(e){alert('Invalid save file.');}
+  };
+  rd.readAsText(file);ev.target.value='';
+};
+A.newGame=function(){
+  if(S&&!confirm('Start a new game? Current progress will be overwritten.'))return;
+  const set=S?S.set:defaultSettings();
+  const sc=el('set-cash')?+el('set-cash').value:set.startCash;
+  set.startCash=sc>0?sc:500;
+  const sd=el('set-seed')?Math.floor(+el('set-seed').value):NaN;
+  set.seed=isFinite(sd)&&sd>0?sd:Math.floor(Math.random()*2**31);
+  newGame(set);saveGame();A.closeModal();render();flushToasts();showAlerts();
+};
+A.setNotif=function(k,v){S.set[k]=v==='1';saveGame();};
+A.setSetting=function(k,v){
+  if(!S)return;
+  if(k==='loansOn'||k==='unpaired')S.set[k]=v==='1';
+  else S.set[k]=+v;
+  if(k==='hackFreq'){if(+v===0)S.nextHack=Infinity;else if(!isFinite(S.nextHack))scheduleNextHack(S.day);}
+  saveGame();
+};
+/* ============ MODAL (settings) ============ */
+A.closeModal=()=>{el('modalhost').innerHTML='';};
+A.openSettings=function(){
+  const s=S.set;
+  const opt=(v,t,cur)=>'<option value="'+v+'"'+(String(cur)===String(v)?' selected':'')+'>'+t+'</option>';
+  el('modalhost').innerHTML=
+  '<div class="modal" onclick="if(event.target===this)A.closeModal()"><div class="panel">'+
+  '<h2>⚙ Settings & Save</h2>'+
+  '<div class="setrow"><label>Starting capital (new game)</label><input id="set-cash" type="number" value="'+s.startCash+'" style="width:110px" title="Applied when you start a new game"></div>'+
+  '<div class="setrow"><label>Block luck multiplier</label><select onchange="A.setSetting(\'luck\',this.value)">'+opt(0.5,'0.5×',s.luck)+opt(1,'1× (default)',s.luck)+opt(2,'2×',s.luck)+opt(5,'5×',s.luck)+'</select></div>'+
+  '<div class="setrow"><label>Rig failure rate</label><select onchange="A.setSetting(\'fail\',this.value)">'+opt(0,'Off',s.fail)+opt(0.5,'Low',s.fail)+opt(1,'Medium (default)',s.fail)+opt(2,'High',s.fail)+'</select></div>'+
+  '<div class="setrow"><label>Power cost modifier</label><select onchange="A.setSetting(\'powerMod\',this.value)">'+opt(0.5,'0.5×',s.powerMod)+opt(1,'1× (default)',s.powerMod)+opt(1.5,'1.5×',s.powerMod)+opt(2,'2×',s.powerMod)+'</select></div>'+
+  '<div class="setrow"><label>Price volatility</label><select onchange="A.setSetting(\'vol\',this.value)">'+opt(0.6,'Low',s.vol)+opt(1,'Medium (default)',s.vol)+opt(1.6,'High',s.vol)+opt(2.6,'Extreme',s.vol)+'</select></div>'+
+  '<div class="setrow"><label>Exchange hack frequency</label><select onchange="A.setSetting(\'hackFreq\',this.value)">'+opt(0,'Never',s.hackFreq)+opt(1500,'Rare',s.hackFreq)+opt(900,'Normal (default)',s.hackFreq)+opt(450,'Frequent',s.hackFreq)+'</select></div>'+
+  '<div class="setrow"><label>Bank loans</label><select onchange="A.setSetting(\'loansOn\',this.value)">'+opt(1,'On (default)',s.loansOn?1:0)+opt(0,'Off',s.loansOn?1:0)+'</select></div>'+
+  '<div class="setrow"><label>Price timeline <span class="dim" style="font-size:10px">(applies immediately)</span></label><select onchange="A.setSetting(\'unpaired\',this.value)" title="Unpaired: same long-term upward trajectory, but bull peaks and crashes are fully randomized from the seed — historical events become news-only and stop driving price.">'+opt(0,'Historical (default)',s.unpaired?1:0)+opt(1,'⛓ Unpaired — randomized cycles',s.unpaired?1:0)+'</select></div>'+
+  '<div style="margin-top:10px;font-size:11px;color:var(--amber2);text-transform:uppercase;letter-spacing:.8px">Notifications</div>'+
+  '<div class="setrow"><label><b>All major pop-ups</b> (halvings, hacks, crashes, milestones — the ones that pause time)</label><select onchange="A.setNotif(\'notifMajor\',this.value)" title="Off: nothing ever blocks the screen or pauses time. Big events become brief toasts and stay in the news feed.">'+opt(1,'On (default)',s.notifMajor?1:0)+opt(0,'Off — never pause',s.notifMajor?1:0)+'</select></div>'+
+  '<div class="setrow"><label>Exchange security warnings / rumors</label><select onchange="A.setNotif(\'notifHack\',this.value)" title="The pre-hack warning popup. Hacks themselves always alert.">'+opt(1,'Alert + pause',s.notifHack?1:0)+opt(0,'News feed only',s.notifHack?1:0)+'</select></div>'+
+  '<div class="setrow"><label>Price milestone alerts ($1, $1K, $100K…)</label><select onchange="A.setNotif(\'notifMile\',this.value)">'+opt(1,'Alert + pause',s.notifMile?1:0)+opt(0,'News feed only',s.notifMile?1:0)+'</select></div>'+
+  '<div class="setrow"><label>New hardware release toasts</label><select onchange="A.setNotif(\'notifHw\',this.value)">'+opt(1,'Toast + news',s.notifHw?1:0)+opt(0,'News feed only',s.notifHw?1:0)+'</select></div>'+
+  '<div class="setrow"><label>Blocks-found toasts</label><select onchange="A.setNotif(\'notifBlocks\',this.value)">'+opt(1,'On',s.notifBlocks?1:0)+opt(0,'Off',s.notifBlocks?1:0)+'</select></div>'+
+  '<div class="setrow"><label>Historical seed (new game)</label><span><input id="set-seed" type="number" value="'+s.seed+'" style="width:130px" title="Shifts event timing ±10-15% and cycle peak magnitudes ±20%. Share a seed to replay or race the same history."> <button class="sm" onclick="el(\'set-seed\').value=Math.floor(Math.random()*2147483647)" title="Generate a new random seed">🎲</button></span></div>'+
+  '<div class="setrow"><label>Current run\'s seed</label><span class="dim" title="The seed this world was generated with">'+s.seed+'</span></div>'+
+  '<div class="row" style="margin-top:12px">'+
+  '<button onclick="A.exportSave()" title="Download full game state as JSON">⬇ Export Save</button>'+
+  '<button onclick="el(\'importfile\').click()" title="Load game state from a JSON file">⬆ Import Save</button>'+
+  '<button onclick="A.showGenesis()" title="View the Genesis Block artifact again">📜 Genesis Block</button>'+
+  '<button class="warn" onclick="A.newGame()" title="Start over with a fresh seed">↻ New Game</button>'+
+  '<button onclick="A.closeModal()" style="margin-left:auto">Close</button></div>'+
+  '<div class="hint">Auto-saves to your browser on every time step. Luck, volatility, failures and hacks apply immediately; starting capital applies to new games.</div>'+
+  '</div></div>';
+};
+/* ============ SVG ICONS & GAUGES ============ */
+function iconFor(r){
+  if(r.kind==='cpu')return '<svg class="icon" width="22" height="22" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="1.5" fill="#222a33" stroke="#4a5663"/><rect x="8" y="5" width="8" height="2" fill="#f7931a"/><rect x="8" y="9" width="8" height="1.4" fill="#39434f"/><rect x="8" y="12" width="8" height="1.4" fill="#39434f"/><circle cx="12" cy="18" r="1.6" fill="#4ade80"/></svg>';
+  if(r.kind==='gpu')return '<svg class="icon" width="22" height="22" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="1.5" fill="#222a33" stroke="#4a5663"/><rect x="4" y="8" width="4" height="8" fill="#2b3643" stroke="#f7931a" stroke-width=".7"/><rect x="10" y="8" width="4" height="8" fill="#2b3643" stroke="#f7931a" stroke-width=".7"/><rect x="16" y="8" width="4" height="8" fill="#2b3643" stroke="#f7931a" stroke-width=".7"/></svg>';
+  return '<svg class="icon" width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="#222a33" stroke="#4a5663"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#f7931a" stroke-width="1.2"/><path d="M12 7.5v9M8.2 9.5l7.6 5M8.2 14.5l7.6-5" stroke="#39434f" stroke-width="1"/><circle cx="12" cy="12" r="1.4" fill="#ffb84d"/></svg>';
+}
+function gauge(label,value,pct,color){
+  pct=clamp(pct,0,1);
+  const C=125.66, dash=(pct*C).toFixed(1);
+  return '<div class="gauge"><svg viewBox="0 0 100 62">'+
+   '<path d="M10 54 A40 40 0 0 1 90 54" fill="none" stroke="#1c2229" stroke-width="9" stroke-linecap="round"/>'+
+   '<path d="M10 54 A40 40 0 0 1 90 54" fill="none" stroke="'+(color||'#f7931a')+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+dash+' 999" style="filter:drop-shadow(0 0 4px '+(color||'#f7931a')+')"/>'+
+   '<text x="50" y="50" text-anchor="middle" fill="#eef4fa" font-size="13" font-weight="bold" font-family="monospace">'+Math.round(pct*100)+'%</text></svg>'+
+   '<div class="gv">'+value+'</div><div class="gl">'+label+'</div></div>';
+}
+/* ============ RENDER: HEADER & TABS ============ */
+function priceChangePct(){
+  const h=S.priceHistory;
+  if(h.length<2)return 0;
+  return (h[h.length-1][1]/h[h.length-2][1]-1)*100;
+}
+function renderHeader(){
+  const chg=priceChangePct();
+  const nw=netWorth();
+  el('hchips').innerHTML=
+   chip('BTC Price',S.price>0?fmtPrice(S.price)+' <span class="'+(chg>=0?'grn':'red')+'" style="font-size:10px">'+(chg>=0?'▲':'▼')+Math.abs(chg).toFixed(1)+'%</span>':'NO MARKET','amber','Current market price per BTC')+
+   chip('Cash',fmtUSD(S.cash),S.cash<0?'red':'','USD bank balance')+
+   chip('Wallet',fmtBTC(S.wallet),'','BTC in self-custody — safe from hacks')+
+   chip('Exchange',fmtBTC(S.exch),S.exch>0?'amber':'','BTC on exchange — sellable but at risk in a hack')+
+   chip('Net Worth',fmtUSD(nw),'grn','Cash + BTC at market + hardware resale + property')+
+   chip('Hashrate',fmtHash(playerHash()),'','Your online mining power');
+  renderTimebar();
+  drawChart('minichart');   // micro chart mirrors the main price chart's range/scale
+}
+function chip(lab,val,cls,tip){return '<div class="chip" title="'+(tip||'')+'"><div class="lab">'+lab+'</div><div class="val '+(cls||'')+'">'+val+'</div></div>';}
+function renderTimebar(){
+  const sp=S.speed;
+  const b=(id,lab,tip)=>'<button class="sm'+(sp===id?' on':'')+'" onclick="A.setSpeed(\''+id+'\')" title="'+tip+'">'+lab+'</button>';
+  el('timebar').innerHTML=
+   '<div class="datebox" title="In-game date">'+fmtDate(S.day).toUpperCase()+'</div>'+
+   b('pause','⏸ PAUSE','Stop time')+b('day','▶ DAY','Auto-advance 1 day/tick')+b('week','▶▶ WEEK','Auto-advance 1 week/tick')+b('month','▶▶▶ MONTH','Auto-advance 1 month/tick')+
+   '<span class="dim" style="font-size:10px;margin-left:4px">STEP:</span>'+
+   '<button class="sm" onclick="A.step(1)" title="Advance exactly 1 day">+1D</button>'+
+   '<button class="sm" onclick="A.step(7)" title="Advance 7 days">+1W</button>'+
+   '<button class="sm" onclick="A.step(30)" title="Advance 30 days">+1M</button>'+
+   '<input type="date" id="skipdate" style="padding:3px 6px;font-size:11px" value="'+(S.ui_skip||'')+'" onchange="A.setUI(\'skip\',this.value)" title="Pick a future date, then SKIP to fast-forward (major alerts will still pause unless disabled in settings)">'+
+   '<button class="sm" onclick="A.skipTo()" title="Fast-forward to the chosen date">⤳ SKIP</button>'+
+   '<span class="dim" style="font-size:10px;border:1px solid var(--edge);border-radius:4px;padding:3px 8px" title="Rigs hashing (powered + linked) of total owned">RIGS <b style="color:#e8eef5">'+S.rigs.filter(rigMining).length+' / '+S.rigs.length+'</b></span>'+
+   '<span class="dim" style="font-size:10px;margin-left:auto" title="Block reward era">REWARD '+curReward()+' BTC'+(curReward()===0?' (FEES ONLY)':'')+'</span>';
+}
+function tabsList(){
+  return [['dash','Dashboard'],['rigs','Rigs'],['shop','Shop'],['farms','Farms'],['exch','Exchange'],['bank','Bank'],['news','News']];
+}
+function renderTabs(){
+  el('tabs').innerHTML=tabsList().map(t=>'<button class="'+(S.tab===t[0]?'act':'')+'" onclick="A.tab(\''+t[0]+'\')">'+t[1]+(t[0]==='news'&&S.news.length&&S.news[0].d>=S.day-7?' •':'')+'</button>').join('');
+}
+function colOpen(k){return !(S.ui_col&&S.ui_col[k]);}
+A.togglePanel=k=>{S.ui_col=S.ui_col||{};S.ui_col[k]=!S.ui_col[k];render();};
+function colH2(k,inner){return '<h2 style="cursor:pointer;user-select:none" onclick="A.togglePanel(\''+k+'\')" title="Click to collapse / expand">'+(colOpen(k)?'▾ ':'▸ ')+inner+'</h2>';}
+let tickerKey='';
+function updateTicker(){
+  const items=S.news.slice(0,5);
+  const key=items.map(n=>n.h).join('|');
+  if(key===tickerKey)return;
+  tickerKey=key;
+  const txt=items.length?items.map(n=>'<span class="tk '+n.i+'">'+(n.i==='bull'?'▲':n.i==='bear'?'▼':'◆')+' '+n.h+'</span><span class="dim" style="font-size:11px">'+n.b+'</span><span class="tksep"> +++ </span>').join(''):'<span class="tk">◆ AWAITING NEWS WIRE</span><span class="tksep">+++</span>';
+  const chars=items.reduce((s,n)=>s+n.h.length+n.b.length,40);
+  el('ticker').innerHTML='<div class="tickin" style="animation-duration:'+clamp(Math.round(chars/9),40,260)+'s">'+txt+txt+'</div>';
+}
+/* ============ RENDER: DASHBOARD ============ */
+function renderDash(){
+  const exp=expectedDailyBTC(), expUSD=exp*S.price, cost=dailyPowerCost(), net=expUSD-cost;
+  const nt=networkTotal(), ph=playerHash(), sHash=soloHashTotal();
+  const eta=sHash>0?(nt/sHash)*600/86400/S.set.luck:Infinity;
+  const nextHalvBlocks=(S.rewardEra+1)*210000-S.totalBlocks;
+  const totW=totalActiveWatts(), capW=S.farms.reduce((s,f)=>s+f.capKW*1000,0);
+  return '<div class="grid g4" style="margin-bottom:12px">'+
+    stat('Daily Mining Revenue',S.price>0?fmtUSD(expUSD):fmtBTCs(exp)+'/day','','Expected value at current hashrate, reward and price')+
+    stat('BTC Mined / Day',fmtBTCs(exp),'amber','Expected BTC per day at your current hashrate. Yesterday actual: '+fmtBTCs(S.stats.foundY))+
+    stat('Daily Power Cost',fmtUSD(cost),'','All online rigs × farm rates')+
+    stat('Daily Net P/L',(S.price>0?fmtUSD(net):'—'),net>=0?'grn':'red','Expected revenue minus power')+
+    stat('Blocks Found (Lifetime)',S.blocksFound.toLocaleString(),'amber','Solo blocks you have mined')+
+    stat('Network Difficulty',fmtNum(S.difficulty),'','Adjusts every 2016 blocks')+
+    stat('Network Fees',(S.feeRate||1)+' sat/vB',(S.feeRate>100?'red':S.feeRate>30?'amber':''),'Simulated mempool fee rate. Spikes during volatility and bull-run congestion. Drives your wallet↔exchange transfer fee.')+
+    stat('Est. Time to Next Block (solo at current hashrate)',sHash>0?fmtDur(eta):'— (no solo hashrate)','','Statistical estimate based on your solo farms\' share of network hashrate — actual solo block times are random. You could hit one in an hour or wait years.')+
+    stat('Time Since Last Block Found',S.lastBlockDay===null?'never':fmtDur(S.day-S.lastBlockDay),'','Days since your last solo block. Pool payouts don\'t count.')+
+    stat('Total BTC Supply Mined',(S.supply>=21e6-1?'₿21,000,000 (fully mined)':'₿'+Math.floor(S.supply).toLocaleString('en-US')+' / ₿21,000,000'),'','All bitcoin issued globally so far. Hard cap: 21 million.')+
+    stat('Network Market Cap',S.price>0?fmtBigUSD(S.price*S.supply):'—','','BTC price × total supply mined. Updates with every price tick.')+
+    stat('Next Halving In',S.rewardEra<33?nextHalvBlocks.toLocaleString()+' blocks':'—','','~'+fmtDur(nextHalvBlocks/146))+
+   '</div>'+
+   '<div class="grid g2"><div class="panel"><h2>Price Chart</h2><div id="chartbox">'+
+   '<div class="row" style="margin-bottom:8px">'+
+     ['3M','1Y','5Y','ALL'].map(r=>'<button class="sm'+((S.ui_range||'1Y')===r?' on':'')+'" onclick="A.setUI(\'range\',\''+r+'\');render()">'+r+'</button>').join('')+
+     '<button class="sm'+(S.ui_log?' on':'')+'" onclick="A.setUI(\'log\',!S.ui_log);render()" title="Logarithmic price scale">LOG</button>'+
+     '<span class="dim" style="margin-left:auto;font-size:11px">'+(S.price>0?fmtPrice(S.price):'market opens Oct 2009')+'</span></div>'+
+   '<canvas id="chart"></canvas></div></div>'+
+   '<div class="panel">'+colH2('ops','Operations')+(colOpen('ops')?'<div class="grid g3">':'<div style="display:none">')+
+     gauge('Hashrate Online',fmtHash(ph),playerHashMax()>0?ph/ (playerHashMax()*0.999):0,'#f7931a')+
+     gauge('Power Load',fmtWatts(totW),capW>0?totW/capW:0,'#60a5fa')+
+     gauge('Avg Temp',S.stats.temp.toFixed(0)+'°C',clamp((S.stats.temp-30)/60,0,1),S.stats.temp>70?'#f87171':'#4ade80')+
+   '</div>'+
+   '<table style="margin-top:10px'+(colOpen('ops')?'':';display:none')+'"><tr><td class="dim">Your share of network</td><td style="text-align:right">'+(nt>0?(ph/nt*100).toFixed(4)+'%':'—')+'</td></tr>'+
+   '<tr><td class="dim">Global network hashrate</td><td style="text-align:right">'+fmtHash(nt)+'</td></tr>'+
+   '<tr><td class="dim">Block reward + avg fee</td><td style="text-align:right">'+(curReward()+curFee()).toFixed(4)+' BTC</td></tr>'+
+   '<tr><td class="dim">BTC in circulation</td><td style="text-align:right">'+(S.supply/1e6).toFixed(3)+'M / 21M</td></tr>'+
+   '<tr><td class="dim">BTC mined by you</td><td style="text-align:right">'+fmtBTCs(S.btcMined)+'</td></tr>'+
+   '<tr><td class="dim">Rigs hashing (on + linked)</td><td style="text-align:right">'+S.rigs.filter(rigMining).length+' / '+S.rigs.length+'</td></tr></table>'+
+   '</div></div>'+
+   '<div class="panel">'+colH2('dnews','Latest News')+(colOpen('dnews')?'<div class="news">'+S.news.slice(0,6).map(newsItem).join('')+'</div>':'')+'</div>';
+}
+function stat(lab,val,cls,tip){return '<div class="stat" title="'+(tip||'')+'"><div class="lab">'+lab+'</div><div class="val '+(cls||'')+'">'+val+'</div></div>';}
+function newsItem(n){
+  const tag=n.i==='bull'?'<span class="tag bull">▲ Bullish</span>':n.i==='bear'?'<span class="tag bear">▼ Bearish</span>':'<span class="tag neut">— Neutral</span>';
+  return '<div class="nitem'+(n.m?' major':'')+'"><div class="nd">'+fmtDate(n.d)+' '+tag+'</div><div class="nh">'+n.h+'</div><div class="nb">'+n.b+'</div></div>';
+}
+/* ============ RENDER: RIGS ============ */
+function farmModeOpts(f){
+  const m=farmMode(f);
+  let o='<option value="solo"'+(m==='solo'?' selected':'')+'>⛏ SOLO — full blocks, full variance</option>';
+  for(const p of activePools())o+='<option value="'+p.id+'"'+(m===p.id?' selected':'')+'>'+p.name+' · '+(p.fee*100).toFixed(1)+'% fee · ~'+(poolShare(p)*100).toFixed(0)+'% of network</option>';
+  if(S.day>=ETH_START)o+='<option value="eth"'+(m==='eth'?' selected':'')+'>Ξ ETH POOL → BTC payouts · GPUs only'+(S.day>=MERGE_DAY?' [DEAD — post-Merge]':'')+'</option>';
+  if(S.day>=AI_START){
+    o+='<option value="ai"'+(m==='ai'?' selected':'')+'>🤖 AI COMPUTE → BTC payouts · 2% fee · GPUs only</option>';
+    o+='<option value="aiusd"'+(m==='aiusd'?' selected':'')+'>🤖 AI COMPUTE → USD payouts · 1% fee · GPUs only</option>';
+  }
+  return o;
+}
+function poolPanel(){
+  const mtitle='⛏ Mining Overview <span class="tag '+(S.rigs.filter(rigMining).length===S.rigs.length&&S.rigs.length?'bull':'neut')+'" title="Rigs hashing of total owned">'+S.rigs.filter(rigMining).length+' / '+S.rigs.length+' ONLINE</span>';
+  if(!colOpen('pool'))return '<div class="panel">'+colH2('pool',mtitle)+'</div>';
+  const nt=networkTotal(), sHash=soloHashTotal();
+  let poolHash=0,cuTot=0,ethCU=0,aiCU=0;
+  for(const f of S.farms){
+    const m=farmMode(f);
+    if(m==='eth')ethCU+=farmCU(f);
+    else if(m==='ai'||m==='aiusd')aiCU+=farmCU(f);
+    else if(m!=='solo'&&POOLS.some(p=>p.id===m&&p.from<=S.day))poolHash+=farmHash(f);
+  }
+  const exp=expectedDailyBTC();
+  return '<div class="panel">'+colH2('pool',mtitle)+
+   '<table>'+
+   '<tr><td class="dim">Solo hashrate (lottery)</td><td style="text-align:right">'+fmtHash(sHash)+(sHash>0&&nt>0?' · '+(sHash/nt*100).toFixed(4)+'% of network':'')+'</td></tr>'+
+   '<tr><td class="dim">Pooled hashrate (steady)</td><td style="text-align:right">'+fmtHash(poolHash)+'</td></tr>'+
+   (S.day>=ETH_START?'<tr><td class="dim">Ξ ETH compute'+(S.day>=MERGE_DAY?' <span class="tag bear">DEAD</span>':'')+'</td><td style="text-align:right">'+ethCU.toFixed(1)+' CU</td></tr>':'')+
+   (S.day>=AI_START?'<tr><td class="dim">🤖 AI compute</td><td style="text-align:right">'+aiCU.toFixed(1)+' CU</td></tr>':'')+
+   '<tr><td class="dim">Expected total / day</td><td style="text-align:right">'+fmtBTCs(exp)+(S.price>0?' ('+fmtUSD(exp*S.price)+')':'')+'</td></tr>'+
+   '<tr><td class="dim">Lifetime pool & compute earnings</td><td style="text-align:right">'+fmtBTCs(S.poolEarned)+'</td></tr>'+
+   '</table><div class="hint">Each farm picks its own mode with the MODE selector in its panel below — one farm can solo-mine while another pools or rents GPU compute. ETH and AI modes only pay GPU rigs (CPUs/ASICs there earn nothing); payouts are in BTC.</div></div>';
+}
+function bulkSellPanel(){
+  if(S.rigs.length<2)return '';
+  if(!colOpen('bsell'))return '<div class="panel">'+colH2('bsell','💰 Bulk Sell')+'</div>';
+  const type=S.ui_bs_type||'all';
+  const models=[...new Set(S.rigs.filter(r=>type==='all'||r.kind===type).map(r=>r.model))];
+  const m=bulkSellMatches();
+  const total=m.reduce((s,r)=>s+rigResale(r),0);
+  return '<div class="panel">'+colH2('bsell','💰 Bulk Sell')+'<div class="row">'+
+   '<select onchange="A.setUI(\'bs_type\',this.value);A.setUI(\'bs_model\',\'all\');render()">'+['all','cpu','gpu','asic'].map(t=>'<option value="'+t+'"'+(type===t?' selected':'')+'>'+(t==='all'?'All types':t.toUpperCase())+'</option>').join('')+'</select>'+
+   '<select onchange="A.setUI(\'bs_model\',this.value);render()"><option value="all">All models</option>'+models.map(id=>'<option value="'+id+'"'+((S.ui_bs_model||'all')===id?' selected':'')+'>'+(id==='gpurig'?'GPU Rig':(findModel(id)||{name:id}).name)+'</option>').join('')+'</select>'+
+   '<label class="dim" style="font-size:11px" title="Only sell rigs at or below this condition">COND ≤</label>'+
+   '<input type="number" min="0" max="100" value="'+(S.ui_bs_cond??100)+'" style="width:70px" onchange="A.setUI(\'bs_cond\',this.value);render()"><span class="dim">%</span>'+
+   '<button class="warn" onclick="A.bulkSell()" '+(m.length?'':'disabled')+' title="Sell every rig matching the filter in one click">SELL '+m.length+' — '+fmtUSD(total)+'</button>'+
+   '</div><div class="hint">Filter by type, model and condition threshold. Example: type ASIC + cond ≤ 30% clears out your dying fleet before a halving.</div></div>';
+}
+const AGG_MIN=30; // farms above this rig count render as aggregated model groups for performance
+function grpSig(r){return r.kind+'|'+r.model+(r.kind==='gpu'?('|'+r.psu+'|'+r.cool+'|'+r.cards.slice().sort().join('.')):'');}
+function grpRow(gid,list,f){
+  const n=list.length, sample=list[0];
+  const name=sample.kind==='gpu'?'GPU Rig ('+sample.cards.length+' cards)':rigModel(sample).name;
+  const mining=list.filter(rigMining).length, broken=list.filter(r=>r.broken).length;
+  const avgCond=list.reduce((s,r)=>s+r.cond,0)/n;
+  const hash=list.reduce((s,r)=>s+rigHash(r),0), watts=list.reduce((s,r)=>s+((r.online&&!r.broken)?rigWatts(r):0),0);
+  const resale=list.reduce((s,r)=>s+rigResale(r),0);
+  const repCost=list.filter(r=>r.broken).reduce((s,r)=>s+Math.max(10,Math.round(rigInvested(r)*0.12)),0);
+  const expanded=S.ui_gx&&S.ui_gx[gid];
+  let html='<div class="grp">'+
+   '<div class="spread"><div>'+iconFor(sample)+'<b>'+name+' × '+n+'</b> '+
+   '<span class="led '+(mining===n?'g':mining>0?'y':'r')+'"></span> <span class="dim" style="font-size:11px">'+mining+' hashing'+(broken?' · <span class="red">'+broken+' failed</span>':'')+'</span></div>'+
+   '<span class="dim" style="font-size:11px">'+fmtHash(hash)+' · '+fmtWatts(watts)+'</span></div>'+
+   '<div class="row" style="margin-top:6px"><span class="dim" style="font-size:10px">AVG COND</span><div class="bar condbar" title="Average condition '+(avgCond*100).toFixed(0)+'%"><i style="width:'+(avgCond*100)+'%"></i></div>'+
+   '<button class="sm" onclick="A.grpAct(\''+gid+'\',\'on\')" title="Power on all in group">⏻ ON</button>'+
+   '<button class="sm" onclick="A.grpAct(\''+gid+'\',\'off\')" title="Power off all in group">⏻ OFF</button>'+
+   '<button class="sm" onclick="A.grpAct(\''+gid+'\',\'link\')" title="Link all in group">⇅ LINK</button>'+
+   (broken?'<button class="sm warn" onclick="A.grpAct(\''+gid+'\',\'repair\')" title="Repair the '+broken+' failed units">🔧 '+fmtUSD(repCost)+'</button>':'')+
+   '<button class="sm" onclick="A.grpAct(\''+gid+'\',\'oc\')" title="Overclock entire group (capacity-checked)">🔥</button>'+
+   '<button class="sm" onclick="A.grpAct(\''+gid+'\',\'uc\')" title="Underclock entire group — efficiency mode">🐢</button>'+
+   '<button class="sm" onclick="A.grpAct(\''+gid+'\',\'std\')" title="Stock clocks for entire group">⚙</button>'+
+   '<button class="sm warn" onclick="A.grpAct(\''+gid+'\',\'sell\')" title="Sell every rig in this group">💰 '+fmtUSD(resale)+'</button>'+
+   '<button class="sm" onclick="A.toggleGx(\''+gid+'\')">'+(expanded?'▾ HIDE':'▸ DETAIL')+'</button></div>';
+  if(expanded){
+    html+=list.slice(0,12).map(rigRow).join('');
+    if(n>12)html+='<div class="hint">…and '+(n-12)+' more identical units (use the group buttons above to manage them all).</div>';
+  }
+  return html+'</div>';
+}
+window._grp={};
+A.toggleGx=function(gid){S.ui_gx=S.ui_gx||{};S.ui_gx[gid]=!S.ui_gx[gid];render();};
+A.grpAct=function(gid,act){
+  const ids=window._grp[gid];if(!ids)return;
+  const idset=new Set(ids);
+  const list=S.rigs.filter(r=>idset.has(r.id));
+  if(!list.length)return;
+  if(act==='on')list.forEach(r=>{if(!r.broken)r.online=true;});
+  else if(act==='off')list.forEach(r=>r.online=false);
+  else if(act==='link')list.forEach(r=>{if(!r.broken)r.conn=true;});
+  else if(act==='repair'){
+    const broken=list.filter(r=>r.broken);
+    const total=broken.reduce((s,r)=>s+Math.max(10,Math.round(rigInvested(r)*0.12)),0);
+    if(S.cash<total)return err('Repairs cost '+fmtUSD(total)+'.');
+    if(!confirm('Repair '+broken.length+' rigs for '+fmtUSD(total)+'?'))return;
+    for(const r of broken){S.cash-=Math.max(10,Math.round(rigInvested(r)*0.12));r.broken=false;r.cond=Math.min(0.95,r.cond+0.35);}
+  }
+  else if(act==='sell'){
+    const total=list.reduce((s,r)=>s+rigResale(r),0);
+    if(!confirm('Sell all '+list.length+' rigs in this group for '+fmtUSD(total)+'?'))return;
+    S.cash+=total;S.rigs=S.rigs.filter(r=>!idset.has(r.id));
+  }
+  else if(act==='oc'||act==='uc'||act==='std'){
+    const mode=act==='oc'?1:act==='uc'?-1:0;
+    let blocked=0;
+    for(const r of list){if(!r.broken&&!setRigClk(r,mode))blocked++;}
+    if(blocked)toast('⚠ Capacity Limit',blocked+' rigs couldn\'t overclock — farm power maxed.');
+  }
+  saveGame();render();flushToasts();
+};
+function renderRigs(){
+  let html=poolPanel();
+  if(S.rigs.length===0)return html+'<div class="panel"><h2>Mining Rigs</h2><div class="dim">No hardware. Visit the Shop.</div></div>';
+  window._grp={};
+  let gi=0;
+  for(const f of S.farms){
+    const rigs=farmRigs(f.id);
+    if(rigs.length===0)continue;
+    const nBroken=rigs.filter(r=>r.broken).length;
+    let body;
+    if(rigs.length>AGG_MIN){
+      const groups={};
+      for(const r of rigs){const sig=grpSig(r);(groups[sig]=groups[sig]||[]).push(r);}
+      body=Object.values(groups).map(list=>{
+        const gid='g'+f.id+'_'+(gi++);
+        window._grp[gid]=list.map(r=>r.id);
+        return grpRow(gid,list,f);
+      }).join('');
+    }else body=rigs.map(rigRow).join('');
+    html+='<div class="panel"><h2>🏭 '+f.name+' <span class="dim" style="font-size:11px;text-transform:none">'+fmtWatts(farmWattsActive(f))+' / '+fmtWatts(f.capKW*1000)+' · '+rigs.length+'/'+f.slots+' slots · '+rigs.filter(rigMining).length+' of '+rigs.length+' online · '+(f.rate*S.set.powerMod*100).toFixed(1)+'¢/kWh · '+FARM_COOL[f.coolTier||0].name+'</span></h2>'+
+     '<div class="row" style="margin-bottom:8px">'+
+     '<span class="dim" style="font-size:10px">MODE:</span><select onchange="A.setFarmMode('+f.id+',this.value)" style="max-width:280px" title="Mining mode for this farm only">'+farmModeOpts(f)+'</select>'+
+     '<button class="sm" onclick="A.powerAll('+f.id+')" title="Bring every offline rig at this site online">⏻ POWER ON ALL</button>'+
+     '<button class="sm" onclick="A.linkAll('+f.id+')" title="Connect every rig here to this farm\'s mining mode">⇅ LINK ALL</button>'+
+     '<button class="sm'+(nBroken?' warn':'')+'" onclick="A.repairAll('+f.id+')" title="Repair all failed rigs — total cost shown before confirming">🔧 REPAIR ALL'+(nBroken?' ('+nBroken+')':'')+'</button>'+
+     '<button class="sm" onclick="A.clkAll('+f.id+',1)" title="Overclock every rig at this site (capacity-checked per rig)">🔥 OC ALL</button>'+
+     '<button class="sm" onclick="A.clkAll('+f.id+',-1)" title="Underclock every rig: −15% hash, −30% power, −30% wear">🐢 UC ALL</button>'+
+     '<button class="sm" onclick="A.clkAll('+f.id+',0)" title="Return every rig to stock clocks">⚙ STOCK</button>'+
+     '</div>'+body+'</div>';
+  }
+  return html+bulkSellPanel();
+}
+function rigRow(r){
+  const m=rigModel(r), mining=rigMining(r);
+  const farm=getFarm(r.farmId), fmode=farmMode(farm);
+  const dailyCost=rigWatts(r)/1000*24*farm.rate*S.set.powerMod;
+  const nt=networkTotal();
+  let dailyRev=0;
+  if(mining){
+    if(fmode==='eth')dailyRev=cuOfRig(r)*ethRate(S.day)*0.98*S.price;
+    else if(fmode==='ai')dailyRev=cuOfRig(r)*aiRate(S.day)*0.98*S.price;
+    else if(fmode==='aiusd')dailyRev=cuOfRig(r)*aiRate(S.day)*0.99*S.price;
+    else{
+      const p=fmode==='solo'?null:POOLS.find(x=>x.id===fmode&&x.from<=S.day);
+      dailyRev=nt>0?rigHash(r)/nt*144*(curReward()+curFee())*S.set.luck*(p?1-p.fee:1)*S.price:0;
+    }
+  }
+  const unprofit=S.price>0&&mining&&dailyRev<dailyCost;
+  let extra='';
+  if(r.kind==='gpu'){
+    const lastCard=S.ui_lastCard&&GPUS.some(g=>g.id===S.ui_lastCard&&g.from<=S.day)?S.ui_lastCard:null;
+    const opts=GPUS.filter(g=>g.from<=S.day).map(g=>'<option value="'+g.id+'"'+(g.id===lastCard?' selected':'')+'>'+g.name+' — '+fmtHash(g.hash)+((g.cu||0)>=3?' — CU '+g.cu:'')+' — '+fmtUSD(g.price)+'</option>').join('');
+    extra='<div class="row" style="margin-top:6px">'+
+     (r.cards.length<PSU_TIERS[r.psu].cards?'<select id="cardsel-'+r.id+'" style="max-width:240px">'+opts+'</select><button class="sm buy" onclick="A.addCard('+r.id+')" title="Install another GPU in this rig">+ Card</button>':'<span class="tag warn">PSU FULL</span>')+
+     (r.psu<PSU_TIERS.length-1?'<button class="sm" onclick="A.upgradePsu('+r.id+')" title="'+PSU_TIERS[r.psu+1].name+' — supports '+PSU_TIERS[r.psu+1].cards+' cards">⬆ PSU '+fmtUSD(PSU_TIERS[r.psu+1].price)+'</button>':'')+
+     (r.cool<COOL_TIERS.length-1?'<button class="sm" onclick="A.upgradeCool('+r.id+')" title="'+COOL_TIERS[r.cool+1].name+' — slows wear">❄ '+fmtUSD(COOL_TIERS[r.cool+1].price)+'</button>':'<span class="tag neut">❄ '+COOL_TIERS[r.cool].name+'</span>')+
+     '</div>';
+    if(r.cards.length){
+      const counts={};r.cards.forEach(c=>counts[c]=(counts[c]||0)+1);
+      extra+='<div class="row" style="font-size:11px;margin-top:4px">'+Object.entries(counts).map(([cid,n])=>
+        '<span class="dim">'+n+'× '+findModel(cid).name+'</span><button class="sm" onclick="A.sellCard('+r.id+',\''+cid+'\')" title="Pull one '+findModel(cid).name+' from this rig and sell it">− '+fmtUSD(cardValue(r,cid))+'</button>'
+      ).join('')+'</div>';
+    }
+  }
+  return '<div class="rig'+(r.broken?' broken':mining?'':' off')+'">'+
+   '<div class="spread"><div>'+iconFor(r)+'<b>'+rigName(r)+'</b> '+
+     (r.broken?'<span class="tag bear">FAILED</span>':
+      mining?'<span class="led g" title="Powered and linked — hashing"></span>':
+      r.online&&!r.conn?'<span class="led y" title="Powered but not connected — burning watts, mining nothing"></span> <span class="tag warn">NO LINK</span>':
+      !r.online&&r.conn?'<span class="led r" title="Linked but powered off"></span> <span class="tag neut">NO POWER</span>':
+      '<span class="led r" title="Powered off"></span>')+
+     (r.clk===1?(hasCooling(r)?' <span class="tag octag" title="Overclocked with adequate cooling — normal wear">🔥 OC</span>':' <span class="tag warn" title="OVERCLOCKED WITHOUT COOLING — ~4× faster degradation and triple the failure rate. Install farm HVAC or rig liquid cooling.">🔥 OC — NO COOLING!</span>'):
+      r.clk===-1?' <span class="tag ecotag" title="Underclocked: −15% hashrate, −30% power draw, −30% wear">🐢 ECO</span>':'')+
+     (unprofit?' <span class="tag warn" title="Daily power cost exceeds expected revenue">UNPROFITABLE</span>':'')+'</div>'+
+   '<div class="row"><span class="dim" style="font-size:11px">'+fmtHash(rigHashMax(r)*clkF(r).h)+(r.clk===1?' (OC)':r.clk===-1?' (UC)':'')+' · '+fmtWatts(rigWatts(r))+' · '+fmtUSD(dailyCost)+'/day</span></div></div>'+
+   '<div class="row" style="margin-top:6px"><span class="dim" style="font-size:10px">COND</span><div class="bar condbar" title="Condition: '+(r.cond*100).toFixed(0)+'%"><i style="width:'+(r.cond*100)+'%"></i></div>'+
+   (r.broken?'<button class="sm buy" onclick="A.repairRig('+r.id+')" title="Restore this rig to service">🔧 Repair '+fmtUSD(Math.max(10,Math.round(rigInvested(r)*0.12)))+'</button>':
+    '<button class="sm'+(r.online?' on':'')+'" onclick="A.toggleRig('+r.id+')" title="Power switch — a powered rig draws electricity">⏻ '+(r.online?'ON':'OFF')+'</button>'+
+    '<button class="sm'+(r.conn?' on':'')+'" onclick="A.toggleConn('+r.id+')" title="Network link — a rig must be powered AND linked to mine">⇅ '+(r.conn?'LINKED':'NO LINK')+'</button>'+
+    '<button class="sm'+(r.clk?' on':'')+'" onclick="A.cycleClk('+r.id+')" title="Cycle clock: STOCK → OC (+'+Math.round((ocFactors(r).h-1)*100)+'% hash, +'+Math.round((ocFactors(r).p-1)*100)+'% power'+(hasCooling(r)?', cooled ✓':', NO cooling — heavy wear')+') → UC (−'+Math.round((1-ucFactors(r).h)*100)+'% hash, −'+Math.round((1-ucFactors(r).p)*100)+'% power, gentler wear)">'+(r.clk===1?'🔥 OC':r.clk===-1?'🐢 UC':'⚙ STD')+'</button>')+
+   '<button class="sm" onclick="A.sellRig('+r.id+')" title="Sell at depreciated market value">Sell '+fmtUSD(rigResale(r))+'</button>'+
+   '<button class="sm warn" onclick="A.scrapRig('+r.id+')" title="Scrap for salvage">Scrap</button></div>'+extra+'</div>';
+}
+/* ============ RENDER: SHOP ============ */
+function effStr(m){
+  const jgh=m.watts/(m.hash/1e9);
+  if(jgh>=1000)return (jgh/1000).toFixed(1)+' kJ/GH';
+  if(jgh>=1)return jgh.toFixed(2)+' J/GH';
+  return (m.watts/(m.hash/1e12)).toFixed(1)+' J/TH';
+}
+function renderShop(){
+  const gpuEra=S.day>=dayOf('2010-07-18'), asicEra=S.day>=dayOf('2013-02-01');
+  const farmOpts=S.farms.map(f=>'<option value="'+f.id+'"'+(shopFarm().id===f.id?' selected':'')+'>'+f.name+' ('+farmRigs(f.id).length+'/'+f.slots+' slots, '+fmtWatts(f.capKW*1000-farmWattsInstalled(f))+' free)</option>').join('');
+  let html='<div class="panel"><div class="spread"><h2 style="border:0;margin:0;padding:0">🛒 Hardware Shop</h2>'+
+   '<div class="row"><span class="dim" style="font-size:11px">INSTALL AT:</span><select onchange="A.setShopFarm(this.value)" title="New hardware is installed at this site">'+farmOpts+'</select>'+
+   '<span class="dim" style="font-size:11px">QTY:</span><input type="number" min="1" max="99999" value="'+(S.ui_qty||1)+'" style="width:74px" oninput="A.setUI(\'qty\',this.value)" title="Bulk buy: units per purchase. Capped automatically by free slots, power headroom and cash. Total cost shown before you confirm.">'+
+   '</div></div></div>';
+  const row=(m,buyFn,note)=>'<tr><td><b>'+m.name+'</b>'+(note?' '+note:'')+'</td><td>'+fmtHash(m.hash)+'</td><td>'+fmtWatts(m.watts)+'</td><td>'+effStr(m)+'</td><td>'+fmtUSD(m.price)+'</td>'+
+    '<td style="text-align:right"><button class="sm buy" onclick="'+buyFn+'" '+(S.cash<m.price?'disabled':'')+'>BUY</button></td></tr>';
+  const head='<tr><th>Model</th><th>Hashrate</th><th>Power</th><th>Efficiency</th><th>Price</th><th></th></tr>';
+  // CPUs
+  html+='<div class="panel"><h2>CPU Miners — Era 1 '+(gpuEra?'<span class="tag warn">OBSOLETE</span>':'<span class="tag bull">CURRENT</span>')+'</h2><table>'+head+
+    CPUS.filter(m=>m.from<=S.day).map(m=>row(m,"A.buyUnit('"+m.id+"')",'')).join('')+'</table></div>';
+  // GPUs
+  if(gpuEra){
+    html+='<div class="grid g2" style="margin-bottom:12px"><div class="panel" style="margin:0"><h2>GPU Cards — Era 2 '+(asicEra?'<span class="tag warn">LOW EFFICIENCY</span>':'<span class="tag bull">CURRENT</span>')+'</h2>'+
+     '<table>'+head+GPUS.filter(m=>m.from<=S.day).map(m=>row(m,"toastInfo()", '<span class="tag neut">CARD</span>'+((m.cu||0)>=3?' <span class="tag bull" title="Compute units — earning power in ETH pool / AI compute modes">CU '+m.cu+'</span>':''))).join('')+'</table>'+
+     '<div class="hint">Cards are installed per-rig from the Rigs tab so power and PSU limits are checked.'+(S.day>=ETH_START?' CU rating = earning power in ETH pool'+(S.day>=AI_START?' / AI compute':'')+' modes.':'')+'</div></div>'+
+     '<div class="panel" style="margin:0"><h2>🔧 Build Rig Frame</h2>'+
+     '<button class="buy" style="width:100%;padding:12px" onclick="A.buyGpuRig()" '+(S.cash<GPU_FRAME_PRICE?'disabled':'')+' title="Open-air frame + 650W PSU. Holds 2 cards; PSU upgradeable to 6.">+ BUILD RIG FRAME — '+fmtUSD(GPU_FRAME_PRICE)+'</button>'+
+     '<table style="margin-top:10px"><tr><td class="dim">Includes</td><td style="text-align:right">Frame + 650W PSU (2 card slots)</td></tr>'+
+     '<tr><td class="dim">PSU upgrades</td><td style="text-align:right">4 slots '+fmtUSD(PSU_TIERS[1].price)+' · 6 slots '+fmtUSD(PSU_TIERS[2].price)+'</td></tr>'+
+     '<tr><td class="dim">Cooling options</td><td style="text-align:right">Fan wall '+fmtUSD(COOL_TIERS[1].price)+' · Liquid '+fmtUSD(COOL_TIERS[2].price)+'</td></tr></table>'+
+     '<div class="hint">Build the frame here, then add cards / PSU / cooling on the rig card in the Rigs tab. Liquid cooling also makes overclocking safe.</div></div></div>';
+  } else html+='<div class="panel"><h2>GPU Rigs — Era 2</h2><div class="dim">Rumors say graphics cards could mine hundreds of times faster… (available Jul 2010)</div></div>';
+  // ASICs
+  if(asicEra){
+    const avail=ASICS.filter(m=>m.from<=S.day).slice(-6).reverse();
+    html+='<div class="panel"><h2>ASIC Miners — Era 3 <span class="tag bull">CURRENT</span></h2><table>'+head+
+      avail.map((m,i)=>row(m,"A.buyUnit('"+m.id+"')",i===0?'<span class="tag bull">LATEST GEN</span>':'')).join('')+'</table>'+
+      '<div class="hint">ASICs can\'t be upgraded — newer generations must replace them. Older units lose value fast as difficulty climbs.</div></div>';
+  } else html+='<div class="panel"><h2>ASIC Miners — Era 3</h2><div class="dim">Custom mining chips are still science fiction… (available Feb 2013)</div></div>';
+  return html;
+}
+window.toastInfo=function(){toast('ℹ Install From Rigs Tab','Build a rig frame first, then use "+ Card" on the rig.');flushToasts();};
+/* ============ RENDER: FARMS ============ */
+function renderFarms(){
+  let html='<div class="panel"><h2>🏭 Your Sites</h2>'+S.farms.map(f=>{
+    const t=FARM_TYPES.find(x=>x.id===f.typeId);
+    const used=farmWattsInstalled(f), cap=f.capKW*1000;
+    const upCost=Math.max(2000,Math.round(t.cost*0.25*Math.pow(1.4,f.upg)));
+    const pv=farmValue(f), held=((S.day-(f.bought||0))/365.25);
+    return '<div class="rig"><div class="spread"><div><b>'+f.name+'</b> <span class="dim" style="font-size:11px">'+(f.rate*S.set.powerMod*100).toFixed(1)+'¢/kWh · '+farmRigs(f.id).length+'/'+f.slots+' slots · '+FARM_COOL[f.coolTier||0].name+'</span></div>'+
+     '<div class="row"><button class="sm" onclick="A.upgradeFarm('+f.id+')" title="+50% power capacity, +25% slots">⚡ Upgrade '+fmtUSD(upCost)+'</button>'+
+     ((f.coolTier||0)<FARM_COOL.length-1?'<button class="sm" onclick="A.coolFarm('+f.id+')" title="'+FARM_COOL[f.coolTier+1].name+': slower hardware wear, safe overclocking for every rig at this site">❄ '+FARM_COOL[f.coolTier+1].name.split(' ')[0]+' '+fmtUSD(farmCoolCost(f))+'</button>':'<span class="tag bull" title="Best cooling installed">❄ MAX</span>')+
+     (S.farms.length>1&&t.cost>0?'<button class="sm warn" onclick="A.sellFarm('+f.id+')" title="'+(farmRigs(f.id).length?'Move or sell the rigs there first':'Sell at appreciated market value')+'">Sell '+fmtUSD(pv)+'</button>':'')+'</div></div>'+
+     '<div class="row" style="margin-top:6px"><span class="dim" style="font-size:10px">POWER</span><div class="bar" title="'+fmtWatts(used)+' of '+fmtWatts(cap)+'"><i style="width:'+clamp(used/cap*100,0,100)+'%"></i></div>'+
+     '<span class="dim" style="font-size:11px">'+fmtWatts(used)+' / '+fmtWatts(cap)+'</span></div>'+
+     (t.cost>0?'<div class="dim" style="font-size:11px;margin-top:5px" title="Property appreciates ~3-4%/yr independent of BTC; better locations appreciate faster">🏠 Est. property value: <span class="amber">'+fmtUSD(pv)+'</span> (paid '+fmtUSD(t.cost)+', held '+held.toFixed(1)+' yrs)</div>':'')+
+     '</div>';
+  }).join('')+'</div>';
+  const avail=FARM_TYPES.filter(t=>t.from<=S.day&&t.cost>0);
+  html+='<div class="panel"><h2>Real Estate Market</h2><table><tr><th>Site</th><th>Power Rate</th><th>Capacity</th><th>Slots</th><th>Price</th><th></th></tr>'+
+   avail.map(t=>'<tr title="'+t.desc+'"><td><b>'+t.name+'</b><div class="dim" style="font-size:10px">'+t.desc+'</div></td><td>'+(t.rate*S.set.powerMod*100).toFixed(1)+'¢/kWh</td><td>'+fmtWatts(t.capKW*1000)+'</td><td>'+t.slots+'</td><td>'+fmtUSD(t.cost)+'</td>'+
+   '<td style="text-align:right"><button class="sm buy" onclick="A.buyFarm(\''+t.id+'\')" '+(S.cash<t.cost?'disabled':'')+'>BUY</button></td></tr>').join('')+
+   '</table><div class="hint">Cheap power usually means remote locations with bigger price tags. Electricity bills are deducted automatically at month end — keep cash on hand or the utility pulls the plug.</div></div>';
+  return html;
+}
+/* ============ RENDER: EXCHANGE ============ */
+function renderExch(){
+  if(S.day<MARKET_OPEN)return '<div class="panel"><h2>💱 Exchange</h2><div class="dim">No exchanges exist yet. The first BTC/USD price will be published in October 2009. Keep mining — those coins may be worth something someday.</div></div>';
+  const warn=S.hackWarned&&S.day<S.nextHack;
+  return '<div class="panel"><h2>📈 BTC/USD</h2><div class="row" style="margin-bottom:8px">'+
+   ['3M','1Y','5Y','ALL'].map(r=>'<button class="sm'+((S.ui_range||'1Y')===r?' on':'')+'" onclick="A.setUI(\'range\',\''+r+'\');render()">'+r+'</button>').join('')+
+   '<button class="sm'+(S.ui_log?' on':'')+'" onclick="A.setUI(\'log\',!S.ui_log);render()" title="Logarithmic price scale">LOG</button>'+
+   '<span class="amber" style="margin-left:auto;font-weight:700">'+fmtPrice(S.price)+'</span></div>'+
+   '<canvas id="exchart"></canvas></div>'+
+  '<div class="grid g2">'+
+  '<div class="panel"><h2>💱 Trade</h2>'+
+   '<div class="stat" style="margin-bottom:10px"><div class="lab">Market Price (spread '+(SPREAD*200).toFixed(1)+'% round-trip)</div><div class="val amber" style="font-size:22px">'+fmtPrice(S.price)+'</div></div>'+
+   (warn?'<div class="rig" style="border-color:#6b4d12"><span class="tag warn">⚠ SECURITY CONCERNS</span> <span style="font-size:12px">Rumors of trouble at exchanges. Coins held here may be at risk.</span></div>':'')+
+   '<h3>Buy BTC (cash → exchange)</h3><div class="row"><input id="buyamt" type="number" min="0" placeholder="USD" style="width:140px" value="'+(S.ui_buyamt||'')+'" oninput="A.setUI(\'buyamt\',this.value);A.prevTrade()"><button class="sm" onclick="A.maxBuy()">MAX</button><button class="buy" onclick="A.buyBTC()">BUY</button></div>'+
+   '<div class="hint" id="buyprev" style="min-height:14px"></div>'+
+   '<h3 style="margin-top:12px">Sell BTC (exchange → cash)</h3><div class="row"><input id="sellamt" type="number" min="0" placeholder="BTC" style="width:140px" value="'+(S.ui_sellamt||'')+'" oninput="A.setUI(\'sellamt\',this.value);A.prevTrade()"><button class="sm" onclick="A.maxSell()">MAX</button><button class="warn" onclick="A.sellBTC()">SELL</button></div>'+
+   '<div class="hint" id="sellprev" style="min-height:14px"></div>'+
+   '<div class="hint">You can only sell coins that are ON the exchange. Exact swap amounts are shown before you confirm.</div></div>'+
+  '<div class="panel"><h2>🔐 Custody</h2>'+
+   '<div class="grid g2" style="margin-bottom:10px">'+
+   '<div class="stat"><div class="lab"><span class="led g"></span>Self-Custody Wallet</div><div class="val">'+fmtBTC(S.wallet)+'</div><div class="hint">Safe from exchange hacks. Mining payouts land here.</div></div>'+
+   '<div class="stat"><div class="lab"><span class="led '+(S.exch>0?'y':'g')+'"></span>Exchange Balance</div><div class="val">'+fmtBTC(S.exch)+'</div><div class="hint">At risk if the exchange is hacked.</div></div></div>'+
+   '<div class="row"><input id="xferamt" type="number" min="0" placeholder="BTC amount" style="width:150px" value="'+(S.ui_xferamt||'')+'" oninput="A.setUI(\'xferamt\',this.value)">'+
+   '<button class="sm" onclick="A.maxXfer(\'e\')" title="Fill with wallet balance">ALL WALLET</button><button class="sm" onclick="A.maxXfer(\'w\')" title="Fill with exchange balance">ALL EXCH</button></div>'+
+   '<div class="row" style="margin-top:8px">'+
+   '<button onclick="A.toExchange()" title="Move BTC to the exchange so you can sell">→ DEPOSIT TO EXCHANGE</button>'+
+   '<button onclick="A.toWallet()" title="Withdraw to self-custody, safe from hacks">← WITHDRAW TO WALLET</button></div>'+
+   '<div class="hint">Network fee: '+(xferFee()?fmtBTC(xferFee()):'free (network is young)')+' per transfer. History says: don\'t store coins on exchanges.</div>'+
+   '<table style="margin-top:10px"><tr><td class="dim">Lifetime BTC mined</td><td style="text-align:right">'+fmtBTCs(S.btcMined)+'</td></tr>'+
+   '<tr><td class="dim">Lifetime BTC sold</td><td style="text-align:right">'+fmtBTCs(S.btcSoldTotal)+'</td></tr></table></div></div>'+limitOrderPanel()+perpsPanel()+tradeLogPanel();
+}
+function tradeLogPanel(){
+  if(!colOpen('tlog'))return '<div class="panel">'+colH2('tlog','📒 Trade Log')+'</div>';
+  const pnlCls=S.perpPnl>=0?'pnl-pos':'pnl-neg';
+  let html='<div class="panel">'+colH2('tlog','📒 Trade Log')+
+   '<div class="grid g3" style="margin-bottom:10px">'+
+   '<div class="stat"><div class="lab">Perp Realized P&L</div><div class="val '+pnlCls+'">'+(S.perpPnl>=0?'+':'')+S.perpPnl.toFixed(8)+' ₿</div><div class="hint">'+(S.price>0?fmtUSD(S.perpPnl*S.price)+' at market':'')+'</div></div>'+
+   '<div class="stat"><div class="lab">Spot Bought (Lifetime)</div><div class="val">'+fmtUSD(S.spotBuyUsd)+'</div></div>'+
+   '<div class="stat"><div class="lab">Spot Sold (Lifetime)</div><div class="val">'+fmtUSD(S.spotSellUsd)+'</div></div></div>';
+  if(!S.tradeLog.length)return html+'<div class="dim">No trades yet. Market orders, limit fills, perp opens/closes, stops and liquidations all land here.</div></div>';
+  html+='<div class="news" style="max-height:300px">'+S.tradeLog.slice(0,50).map(e=>
+   '<div class="nitem"><div class="nd">'+fmtDate(e.d)+'</div><div class="nb">'+e.t+
+   (e.p!=null?' <b class="'+(e.p>=0?'pnl-pos':'pnl-neg')+'">'+(e.p>=0?'+':'')+e.p.toFixed(8)+' ₿</b>':'')+'</div></div>').join('')+'</div></div>';
+  return html;
+}
+function limitOrderPanel(){
+  const side=S.ui_lo_side||'buy';
+  if(!colOpen('lim'))return '<div class="panel">'+colH2('lim','📋 Limit Orders'+(S.limitOrders.length?' <span class="tag neut">'+S.limitOrders.length+' OPEN</span>':''))+'</div>';
+  return '<div class="panel">'+colH2('lim','📋 Limit Orders')+
+   '<div class="row">'+
+   '<select onchange="A.setUI(\'lo_side\',this.value);render()"><option value="buy"'+(side==='buy'?' selected':'')+'>BUY when price ≤</option><option value="sell"'+(side==='sell'?' selected':'')+'>SELL when price ≥</option></select>'+
+   '<input id="loprice" type="number" min="0" placeholder="target $" style="width:120px" value="'+(S.ui_loprice||'')+'" oninput="A.setUI(\'loprice\',this.value)">'+
+   '<input id="loqty" type="number" min="0" placeholder="BTC qty" style="width:120px" value="'+(S.ui_loqty||'')+'" oninput="A.setUI(\'loqty\',this.value)">'+
+   '<button class="buy" onclick="A.placeLimit()" title="Executes automatically when the daily price crosses your target">PLACE ORDER</button></div>'+
+   (S.limitOrders.length?'<table style="margin-top:10px"><tr><th>Side</th><th>Trigger</th><th>Quantity</th><th>Value</th><th></th></tr>'+
+    S.limitOrders.map((o,i)=>'<tr><td>'+(o.side==='buy'?'<span class="tag bull">BUY</span>':'<span class="tag bear">SELL</span>')+'</td><td>'+(o.side==='buy'?'≤ ':'≥ ')+fmtPrice(o.price)+'</td><td>'+fmtBTCs(o.qty)+'</td><td>'+fmtUSD(o.qty*o.price)+'</td>'+
+    '<td style="text-align:right"><button class="sm warn" onclick="A.cancelLimit('+i+')">CANCEL</button></td></tr>').join('')+'</table>':
+    '<div class="hint" style="margin-top:8px">No open orders. Set a target price and quantity — fills happen automatically as the market moves. Buys need cash and land on the exchange; sells need BTC on the exchange.</div>')+
+   '</div>';
+}
+function perpsPanel(){
+  if(!S.futuresOn)return '';
+  const dir=S.ui_fdir||'long';
+  const styleEra=yearOf(S.day)<2020?'MEX-style inverse perps':'modern perp interface';
+  const ptitle='📊 BTC Perpetual Swaps <span class="dim" style="font-size:10px;text-transform:none">'+styleEra+' · BTC-margined · settled in BTC</span>'+(S.positions.length?' <span class="tag warn">'+S.positions.length+' OPEN</span>':'');
+  if(!colOpen('perps'))return '<div class="panel">'+colH2('perps',ptitle)+'</div>';
+  let html='<div class="panel">'+colH2('perps',ptitle)+
+   '<div class="grid g2"><div>'+
+   '<div class="row" style="margin-bottom:8px">'+
+   '<button class="'+(dir==='long'?'on':'')+'" onclick="A.setUI(\'fdir\',\'long\');render()" title="Profit in BTC when price rises">▲ LONG</button>'+
+   '<button class="'+(dir==='short'?'on':'')+'" onclick="A.setUI(\'fdir\',\'short\');render()" title="Profit in BTC when price falls">▼ SHORT</button>'+
+   '<span class="dim" style="font-size:11px;margin-left:auto" title="Margin is posted from your exchange BTC balance only">Available: '+fmtBTC(S.exch)+'</span></div>'+
+   '<div class="row"><label class="dim" style="font-size:11px">MARGIN ₿</label><input id="fmargin" type="number" min="0.001" step="0.001" style="width:120px" value="'+(S.ui_fmargin||'')+'" oninput="A.setUI(\'fmargin\',this.value)" title="BTC posted as collateral — comes from your exchange balance">'+
+   '<label class="dim" style="font-size:11px">LEV</label><select id="flev" onchange="A.setUI(\'flev\',this.value)">'+[1,2,5,10,25,50,100].map(l=>'<option value="'+l+'"'+(String(S.ui_flev||10)===String(l)?' selected':'')+'>'+l+'×</option>').join('')+'</select>'+
+   '<label class="dim" style="font-size:11px" title="Optional stop-loss as % of margin to risk. Example: 10 closes the position once it\'s down 10% of your margin — at 10× leverage that\'s a 1% adverse price move.">STOP-LOSS %</label><input id="fstop" type="number" min="0" max="94" style="width:80px" placeholder="none" value="'+(S.ui_fstop||'')+'" oninput="A.setUI(\'fstop\',this.value)">'+
+   '<button class="buy" onclick="A.openPos()">OPEN</button></div>'+
+   '<div class="hint">Margin and PnL are pure BTC — only coins on the exchange can be posted (wallet coins stay safe). Liquidation hits when the move against you eats ~95% of margin (10× long: −9.5%). Daily funding flows with the premium. The graveyard is full of 100× cowboys.</div>'+
+   '</div><div>';
+  if(!S.positions.length)html+='<div class="dim">No open positions.</div>';
+  else{
+    html+='<table><tr><th>Side</th><th>Margin ₿</th><th>Entry</th><th>Liq. Price</th><th>Stop</th><th>uPnL ₿</th><th></th></tr>'+
+    S.positions.map(P=>{
+      const pnl=Math.max(-P.margin,P.margin0*P.lev*(S.price/P.entry-1)*P.dir);
+      return '<tr><td>'+(P.dir>0?'<span class="tag bull">LONG '+P.lev+'×</span>':'<span class="tag bear">SHORT '+P.lev+'×</span>')+'</td>'+
+      '<td>'+P.margin.toFixed(8)+'</td><td>'+fmtPrice(P.entry)+'</td><td class="red" title="Forced liquidation — margin is lost">'+fmtPrice(P.liq)+'</td><td>'+(P.stop?(P.stopPct?'−'+P.stopPct+'% ('+fmtPrice(P.stop)+')':fmtPrice(P.stop)):'—')+'</td>'+
+      '<td class="'+(pnl>=0?'pnl-pos':'pnl-neg')+'" title="'+(S.price>0?fmtUSD(pnl*S.price):'')+'">'+pnl.toFixed(8)+'</td>'+
+      '<td style="text-align:right"><button class="sm" onclick="A.closePos('+P.id+')">CLOSE</button></td></tr>';
+    }).join('')+'</table>';
+  }
+  return html+'</div></div></div>';
+}
+/* ============ RENDER: BANK ============ */
+function renderBank(){
+  const apr=loanAPR(), lim=creditLimit(), frozen=S.day<S.creditFreeze;
+  let html='<div class="grid g2"><div class="panel"><h2>🏦 Account</h2>'+
+   '<div class="grid g2" style="margin-bottom:10px">'+
+   '<div class="stat"><div class="lab">USD Balance</div><div class="val'+(S.cash<0?' red':'')+'">'+fmtUSD(S.cash)+'</div></div>'+
+   '<div class="stat"><div class="lab">Power Bill Accruing</div><div class="val">'+fmtUSD(S.pendingPower)+'</div><div class="hint">Auto-deducted at month end</div></div></div>';
+  if(S.unpaidBill>0)html+='<div class="rig" style="border-color:#6b2222"><div class="spread"><div><span class="tag bear">POWER CUT</span> Arrears: <b>'+fmtUSD(S.unpaidBill)+'</b></div>'+
+   '<button class="buy" onclick="A.payBill()" '+(S.cash<S.unpaidBill?'disabled':'')+'>PAY ARREARS</button></div><div class="hint">Rigs stay dark until paid; then switch them on in the Rigs tab.</div></div>';
+  html+='<div class="hint">Monthly electricity = active power draw × site rate. If you can\'t pay, the grid cuts you off.</div></div>';
+  html+='<div class="panel"><h2>Loans</h2>';
+  if(!S.set.loansOn)html+='<div class="dim">Loans are disabled in settings.</div>';
+  else if(frozen)html+='<div class="rig" style="border-color:#6b2222"><span class="tag bear">CREDIT FROZEN</span> until '+fmtDate(S.creditFreeze)+' after your default.</div>';
+  else{
+    html+='<div class="row"><input id="loanamt" type="number" min="100" placeholder="Amount USD" style="width:140px" value="'+(S.ui_loanamt||'')+'" oninput="A.setUI(\'loanamt\',this.value)">'+
+    '<select id="loanterm"><option value="12">12 mo</option><option value="24" selected>24 mo</option><option value="48">48 mo</option></select>'+
+    '<button class="buy" onclick="A.takeLoan()">BORROW</button></div>'+
+    '<div class="hint">APR '+(apr*100).toFixed(0)+'% · Credit limit '+fmtUSD(lim)+' (40% of net worth). Fixed monthly payments, auto-deducted. Miss one and the repo crew comes for your rigs.</div>';
+  }
+  if(S.loans.length){
+    html+='<table style="margin-top:10px"><tr><th>Balance</th><th>Rate</th><th>Payment</th><th>Months Left</th><th></th></tr>'+
+    S.loans.map((L,i)=>'<tr><td>'+fmtUSD(L.bal)+'</td><td>'+(L.rate*100).toFixed(0)+'%</td><td>'+fmtUSD(L.pay)+'/mo</td><td>'+L.left+'</td>'+
+    '<td style="text-align:right"><button class="sm buy" onclick="A.payLoan('+i+')" '+(S.cash<L.bal?'disabled':'')+' title="Settle the remaining balance today — no further interest, no penalty">PAY OFF '+fmtUSD(L.bal)+'</button></td></tr>').join('')+'</table>';
+  }
+  html+='</div></div>';
+  return html;
+}
+/* ============ RENDER: NEWS ============ */
+function renderNews(){
+  return '<div class="panel"><h2>📰 News Wire</h2><div class="news" style="max-height:none">'+
+    (S.news.length?S.news.map(newsItem).join(''):'<div class="dim">Nothing yet.</div>')+'</div></div>';
+}
+/* ============ CHART ============ */
+function drawChart(id){
+  const cv=el(id||'chart');if(!cv||cv.clientWidth<10)return;
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth,H=cv.clientHeight||260;
+  cv.width=W*dpr;cv.height=H*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  const range=S.ui_range||'1Y';
+  const spans={'3M':91,'1Y':365,'5Y':1826,'ALL':1e9};
+  const minDay=S.day-spans[range];
+  let data=S.priceHistory.filter(p=>p[0]>=minDay);
+  if(data.length<2){ctx.fillStyle='#5a6672';ctx.font='12px monospace';ctx.fillText('Awaiting market data…',14,H/2);return;}
+  if(data.length>800){const k=Math.ceil(data.length/800);data=data.filter((p,i)=>i%k===0||i===data.length-1);}
+  const log=!!S.ui_log;
+  const ys=data.map(p=>log?Math.log10(p[1]):p[1]);
+  let ymin=Math.min.apply(null,ys),ymax=Math.max.apply(null,ys);
+  if(ymax-ymin<1e-9){ymax+=1;ymin-=1;}
+  const pad=(ymax-ymin)*0.08;ymin-=pad;ymax+=pad;
+  const x0=data[0][0],x1=data[data.length-1][0];
+  const X=d=>8+(W-16)*(d-x0)/Math.max(1,x1-x0);
+  const Y=v=>H-18-(H-30)*((log?Math.log10(v):v)-ymin)/(ymax-ymin);
+  // grid
+  ctx.strokeStyle='#1a2026';ctx.lineWidth=1;ctx.fillStyle='#5a6672';ctx.font='10px monospace';
+  for(let i=0;i<=4;i++){
+    const gy=12+(H-30)*i/4;
+    ctx.beginPath();ctx.moveTo(8,gy);ctx.lineTo(W-8,gy);ctx.stroke();
+    const v=ymax-(ymax-ymin)*i/4;
+    const pv=log?Math.pow(10,v):v;
+    ctx.fillText(pv>=1000?'$'+fmtNum(pv):fmtPrice(pv),12,gy-3);
+  }
+  // line + fill
+  ctx.beginPath();
+  data.forEach((p,i)=>{const x=X(p[0]),y=Y(p[1]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle='#f7931a';ctx.lineWidth=1.6;ctx.shadowColor='rgba(247,147,26,.5)';ctx.shadowBlur=6;ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.lineTo(X(x1),H-18);ctx.lineTo(X(x0),H-18);ctx.closePath();
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(247,147,26,.22)');grad.addColorStop(1,'rgba(247,147,26,0)');
+  ctx.fillStyle=grad;ctx.fill();
+  // x labels
+  ctx.fillStyle='#5a6672';
+  ctx.fillText(fmtDate(x0),10,H-5);
+  const lbl=fmtDate(x1);ctx.fillText(lbl,W-10-ctx.measureText(lbl).width,H-5);
+}
+/* ============ MASTER RENDER ============ */
+function render(){
+  if(!S)return;
+  renderHeader();renderTabs();updateTicker();
+  const main=el('main');
+  const ae=document.activeElement;
+  if(ae&&main.contains(ae)&&ae.tagName==='INPUT')return; // don't clobber typing
+  switch(S.tab){
+    case 'dash':main.innerHTML=renderDash();drawChart();break;
+    case 'rigs':main.innerHTML=renderRigs();break;
+    case 'shop':main.innerHTML=renderShop();break;
+    case 'farms':main.innerHTML=renderFarms();break;
+    case 'exch':main.innerHTML=renderExch();drawChart('exchart');A.prevTrade();break;
+    case 'bank':main.innerHTML=renderBank();break;
+    case 'news':main.innerHTML=renderNews();break;
+  }
+}
+window.addEventListener('resize',()=>{if(!S)return;if(S.tab==='dash')drawChart();if(S.tab==='exch')drawChart('exchart');});
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'&&document.activeElement.tagName!=='INPUT'){
+    e.preventDefault();S.speed=S.speed==='pause'?'day':'pause';renderTimebar();
+  }
+});
+/* ============ BOOT ============ */
+if(!loadGame())newGame(null);
+render();flushToasts();showAlerts();
+setInterval(tickAuto,650);
+setInterval(saveGame,30000);
+</script>
+</body>
+</html>
